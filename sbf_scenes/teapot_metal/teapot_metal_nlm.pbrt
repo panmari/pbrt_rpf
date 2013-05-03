@@ -1,0 +1,59 @@
+
+LookAt 18 5.5 2    15.5 .9 10   0 1 0
+Camera "perspective" "float fov" [40]
+
+Film "sbfimage" 
+     "integer xresolution"  [800]
+	 "integer yresolution"  [800]
+	 "string filename"  ["teapot_metal_nlm.exr"]
+     "bool dumpfeaturebuffer" ["false"]
+     "string filter"          ["cnlmf"] #cnlmf->Cross NLM Filter
+     # Filtering parameters for intermediate adaptive sampling stage
+     "float interparams"      [0.0 0.005 0.01 0.02 0.04 0.08 0.16 0.32 0.64]
+     # Filtering parameters for final output stage
+     "float finalparams"      [0.0 0.005 0.01 0.02 0.04 0.08 0.16 0.32 0.64]    
+     # Filtering parameters for feature buffers
+     "float sigman" [0.8] "float sigmar" [0.25] "float sigmad" [0.6] 
+     # Filtering parameters for MSE filtering
+     "float intermsesigma" [4.0] "float finalmsesigma" [4.0]    
+Sampler "sbfsampler" "integer initsamples" [8] "integer adaptivesamples" [0] "integer maxsamples" [1024]
+Renderer "sbf"
+PixelFilter "gaussian" "float xwidth" [2.0] "float ywidth" [2.0] "float alpha" [0.5]
+
+SurfaceIntegrator "path" #"integer maxdepth" [2]
+
+WorldBegin
+
+# lights
+AttributeBegin
+#Rotate -90 1 0 0 
+    LightSource "infinite" "integer nsamples" [16] "color L" [1 1 1]
+        "string mapname" ["textures/uffizi_latlong.exr"]
+#        "string mapname" ["textures/skylight-sunset.exr"]
+AttributeEnd
+
+#floor
+Texture "tmap" "color" "imagemap" "string filename" "textures/buildingblock.exr"
+	"float uscale" 60 "float vscale" 60
+Texture "tbump-tex" "float" "imagemap" "string filename" "textures/buildingblock.exr"
+	"float uscale" 60 "float vscale" 60
+Texture "sbump" "float" "scale" "texture tex1" "tbump-tex"
+	"float  tex2" [-.25]
+Material "substrate" "texture Kd" "tmap" 
+	 "color Ks" [.5 .5 .5] "float uroughness" [.05]
+	"float vroughness" [.05]
+	"texture bumpmap" "sbump" 
+Shape "trianglemesh" "integer indices" [0 1 2 0 3 2 ]
+    "point P" [ -100 0 -100  100 0 -100   100 0 100   -100 0 100 ]
+
+AttributeBegin
+Material "metal"  "float roughness" [.001]
+    "spectrum eta" "spds/metals/Au.eta.spd"
+    "spectrum k" "spds/metals/Au.k.spd"
+
+Translate 15 0 10
+Scale 1.25 1.25 1.25
+Include "geometry/room-teapot.pbrt"
+AttributeEnd
+
+WorldEnd
