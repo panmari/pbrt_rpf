@@ -1,0 +1,57 @@
+
+Scale -1 1 1
+Accelerator "bvh"
+
+Film "image"    
+    "integer xresolution"    [1024] "integer yresolution" [1024]
+    "string filename"        ["sibenik_rpf.exr"]
+    "bool dumpfeaturebuffer" ["false"]
+    "string filter"          ["cbf"] # cbf-> Cross Bilateral Filter
+    # Filtering parameters for intermediate adaptive sampling stage
+    "float interparams"      [0.0 1.0 2.0 4.0]
+    # Filtering parameters for final output stage
+    "float finalparams"      [0.0000 0.7071 1.0000 1.4142 2.0000 2.8284 4.0000 5.6569 8.0000]
+    # Filtering parameters for feature buffers
+    "float sigman" [0.8] "float sigmar" [0.25] "float sigmad" [0.6] 
+    # Filtering parameters for MSE filtering
+    "float intermsesigma" [4.0] "float finalmsesigma" [8.0]    
+
+Sampler "random"     
+    "integer initsamples" [8] 
+
+Renderer "samplerrenderer"
+# See sbf.cpp for the usage of built-in filters
+
+LookAt  15 2.5 4.3   -.261 -.031 1.252   0 0 1
+
+Camera "perspective"
+    "float fov" [50.1343]
+    "float focaldistance" [15]
+    "float lensradius" [.1]
+
+SurfaceIntegrator "path" "integer maxdepth" [1]
+
+WorldBegin
+
+AttributeBegin
+Rotate 320 0 0 1
+LightSource "infinite" "integer nsamples" [4]
+    "string mapname" ["textures/skylight-day.exr"  ]
+AttributeEnd
+
+# Light above
+AttributeBegin
+AreaLightSource "area" "color L" [50 50 50] # "integer nsamples" [4]
+Rotate 180 1 0 0
+Translate 0 0 -20
+Shape "disk" "float radius" [4]
+AttributeEnd
+
+AttributeBegin
+Include "geometry/gargoyle.pbrt"
+AttributeEnd
+
+Include "geometry/sibenik.pbrt"
+
+WorldEnd
+
