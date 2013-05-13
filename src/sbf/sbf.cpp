@@ -116,7 +116,10 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
             AtomicAdd(&(pixelInfo.normal[i]), isect.shadingN[i]);            
             AtomicAdd(&(pixelInfo.sqNormal[i]), isect.shadingN[i]*isect.shadingN[i]);
         }
-    }    
+    }
+    AtomicAdd(&(pixelInfo.lensPos[0]), sample.lensU); //should this save a copy in the array?
+    AtomicAdd(&(pixelInfo.lensPos[1]), sample.lensV);
+
     AtomicAdd(&(pixelInfo.depth), isect.depth);
     AtomicAdd(&(pixelInfo.sqDepth), isect.depth*isect.depth);
     AtomicAdd((AtomicInt32*)&(pixelInfo.sampleCount), (int32_t)1);
@@ -203,6 +206,7 @@ void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
 
         //new:
         WriteImage(filenameBase+"_sbf_dir"+filenameExt, dirImg, xres, yres);
+        WriteImage(filenameBase+"_sbf_lens"+filenameExt, lensImg, xres, yres);
     }
 }
 
@@ -221,7 +225,7 @@ TwoDArray<Color> SBF::FloatImageToColor(const TwoDArray<float> &image) const {
     return colorImg;
 }
 
-void SBF::Update(bool final) {        
+void SBF::Update(bool final) {
     ProgressReporter reporter(1, "Updating");
 
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
@@ -251,6 +255,10 @@ void SBF::Update(bool final) {
             Color dirSum = Color(pixelInfo.dir);
             Color dirMean = dirSum*invSampleCount;
             
+            Color lensSum = Color(pixelInfo.lensPos);
+            //Color lensSum = Color(0.f, 0.f, 0.f);
+            Color lensMean = lensSum*invSampleCount;
+
             float depthSum = pixelInfo.depth;
             float sqDepthSum = pixelInfo.sqDepth;
             float depthMean = depthSum * invSampleCount;
@@ -267,6 +275,8 @@ void SBF::Update(bool final) {
             depthVarImg(x, y) = depthVar;
             //new
             dirImg(x, y) = dirMean;
+            // this ends up in a seg fault? Oo
+            lensImg(x, y) = lensMean;
 
             Feature feature, featureVar;
             feature[0] = norMean[0];
