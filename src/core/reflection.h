@@ -178,7 +178,8 @@ public:
                  int sqrtSamples = 6) const;
 
     Spectrum K() const;
-    Normal N() const {return nn;}
+    Normal N() const {return nn;} // shading normal
+    //Normal N2() const {return ng;} // geometric normal, not used
     
     // BSDF Public Data
     const DifferentialGeometry dgShading;

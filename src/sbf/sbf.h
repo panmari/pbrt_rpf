@@ -80,7 +80,7 @@ private:
                 Lxyz[i] = sqLxyz[i] =
                     normal[i] = sqNormal[i] = 
                     rho[i] = sqRho[i] =  
-                    depth = sqDepth = 0.f;
+                    depth = sqDepth = dir[i] = 0.f;
             }
             sampleCount = 0;
         }
@@ -94,6 +94,7 @@ private:
         float sqDepth;
         float weightSum;
         int sampleCount;
+        float dir[3];
     };
 
     FilterType fType;
@@ -128,6 +129,9 @@ private:
     TwoDArray<Color> sigmaImg;
 
     RNG rng;
+
+    //new debug img
+	TwoDArray<Color> dirImg;
 };
 
 #endif //PBRT_SBF_H

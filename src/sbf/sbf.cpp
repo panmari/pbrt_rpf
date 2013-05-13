@@ -73,6 +73,7 @@ SBF::SBF(int xs, int ys, int w, int h,
     featureVarImg = TwoDArray<Feature>(xPixelCount, yPixelCount);
 
     norImg = TwoDArray<Color>(xPixelCount, yPixelCount);
+    dirImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     rhoImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     depthImg = TwoDArray<float>(xPixelCount, yPixelCount);
     rhoVarImg = TwoDArray<Color>(xPixelCount, yPixelCount);
@@ -108,6 +109,8 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
         AtomicAdd(&(pixelInfo.sqLxyz[i]), xyz[i]*xyz[i]);
         AtomicAdd(&(pixelInfo.rho[i]), rhoXYZ[i]);
         AtomicAdd(&(pixelInfo.sqRho[i]), rhoXYZ[i]*rhoXYZ[i]);
+        //new
+        AtomicAdd(&(pixelInfo.dir[i]), isect.dir[i]);
         // Sometimes pbrt returns NaN normals, we simply ignore them here
         if(!isect.shadingN.HasNaNs()) {
             AtomicAdd(&(pixelInfo.normal[i]), isect.shadingN[i]);            
@@ -197,6 +200,9 @@ void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
         TwoDArray<Color> dvColImg = FloatImageToColor(depthVarImg);
         WriteImage(filenameBase+"_sbf_dep"+filenameExt, depthColImg, xres, yres);
         WriteImage(filenameBase+"_sbf_dep_var"+filenameExt, dvColImg, xres, yres);
+
+        //new:
+        WriteImage(filenameBase+"_sbf_dir"+filenameExt, dirImg, xres, yres);
     }
 }
 
@@ -241,6 +247,9 @@ void SBF::Update(bool final) {
             Color rhoMean = rhoSum*invSampleCount;
             Color rhoVar = (sqRhoSum - rhoSum*rhoMean) *
                            invSampleCount_1;
+            //new
+            Color dirSum = Color(pixelInfo.dir);
+            Color dirMean = dirSum*invSampleCount;
             
             float depthSum = pixelInfo.depth;
             float sqDepthSum = pixelInfo.sqDepth;
@@ -256,6 +265,8 @@ void SBF::Update(bool final) {
             rhoVarImg(x, y) = rhoVar;
             depthImg(x, y) = depthMean;
             depthVarImg(x, y) = depthVar;
+            //new
+            dirImg(x, y) = dirMean;
 
             Feature feature, featureVar;
             feature[0] = norMean[0];

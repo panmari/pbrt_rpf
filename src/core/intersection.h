@@ -65,6 +65,7 @@ struct Intersection {
         
     mutable Spectrum rho;
     mutable Normal shadingN;
+    mutable Vector dir;
     mutable float depth;
 };
 
