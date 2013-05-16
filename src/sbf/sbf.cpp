@@ -132,14 +132,19 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
     AtomicAdd(&(pixelInfo.depth), isect.depth);
     AtomicAdd(&(pixelInfo.sqDepth), isect.depth*isect.depth);
     AtomicAdd((AtomicInt32*)&(pixelInfo.sampleCount), (int32_t)1);
-    //not so smart? >.<
+    //TODO: does this work for multiple threads??
     SampleData sd = allSamples[sampleCount++];
     for(int i = 0; i < 3; i++) {
-    	sd.Lxyz[i] = xyz[i];
+    	sd.rgb[i] = xyz[i];
     	sd.rho[i] = rhoXYZ[i];
     	sd.normal[i] = isect.shadingN[i];
+    	sd.secondOrigin[i] = isect.secondOrigin[i];
+    	sd.thirdOrigin[i] = isect.thirdOrigin[i];
     }
-	sd.lensPos[0] = sample.lensU;
+    sd.imgPos[0] = sample.imageX;
+    sd.imgPos[1] = sample.imageY;
+    sd.lensPos[0] = sample.lensU;
+    sd.lensPos[1] = sample.lensV;
 	sd.time = sample.time;
 }
 

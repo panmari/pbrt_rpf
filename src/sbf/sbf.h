@@ -107,18 +107,20 @@ private:
     struct SampleData {
             SampleData() {
                 for(int i = 0; i < 3; i++) {
-                    Lxyz[i] =
+                    rgb[i] =
                         normal[i] =
                         rho[i] = dir[i] = 0.f;
                 }
                 lensPos[0] = lensPos[1] = time = 0.f;
             }
-            float Lxyz[3];
+            float rgb[3];
             float normal[3];
+            float secondOrigin[3];
+            float thirdOrigin[3];
             float rho[3];
             int sampleCount;
 
-            //new
+            float imgPos[2];
             float lensPos[2];
             float time;
             float dir[3];

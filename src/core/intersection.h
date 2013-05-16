@@ -67,6 +67,7 @@ struct Intersection {
     mutable Normal shadingN;
     mutable Vector dir;
     mutable float depth;
+    mutable Point secondOrigin, thirdOrigin;
 };
 
 
