@@ -133,7 +133,7 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
     AtomicAdd(&(pixelInfo.sqDepth), isect.depth*isect.depth);
     AtomicAdd((AtomicInt32*)&(pixelInfo.sampleCount), (int32_t)1);
     //TODO: does this work for multiple threads??
-    SampleData sd = allSamples[sampleCount++];
+    SampleData& sd = allSamples[sampleCount++];
     for(int i = 0; i < 3; i++) {
     	sd.rgb[i] = xyz[i];
     	sd.rho[i] = rhoXYZ[i];
@@ -252,75 +252,30 @@ TwoDArray<Color> SBF::FloatImageToColor(const TwoDArray<float> &image) const {
 
 void SBF::Update(bool final) {
     ProgressReporter reporter(1, "Updating");
-
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
-    for(int y = 0; y < yPixelCount; y++)
-        for(int x = 0;x < xPixelCount; x++) {
-            PixelInfo &pixelInfo = (*pixelInfos)(x, y);
-            float invSampleCount = 1.f/(float)pixelInfo.sampleCount;
-            float invSampleCount_1 = 1.f/((float)pixelInfo.sampleCount-1.f);
-            Color colSum = Color(pixelInfo.Lxyz); //color in RGB
-            Color sqColSum = Color(pixelInfo.sqLxyz); //square of the color?
-            Color colMean = colSum*invSampleCount;
-            Color colVar = (sqColSum - colSum*colMean) * 
-                           invSampleCount_1 * invSampleCount;
+    for(int i = 0; i < yPixelCount*xPixelCount*8; i++) {
+		SampleData sd = allSamples[i];
 
-            Color norSum = Color(pixelInfo.normal);
-            Color sqNorSum = Color(pixelInfo.sqNormal);
-            Color norMean = norSum*invSampleCount;
-            Color norVar = (sqNorSum - norSum*norMean) *
-                           invSampleCount_1;
-            
-            Color rhoSum = Color(pixelInfo.rho);
-            Color sqRhoSum = Color(pixelInfo.sqRho);
-            Color rhoMean = rhoSum*invSampleCount;
-            Color rhoVar = (sqRhoSum - rhoSum*rhoMean) *
-                           invSampleCount_1;
-            //new
-            Color dirSum = Color(pixelInfo.dir);
-            Color dirMean = dirSum*invSampleCount;
-            
-            Color lensSum = Color(pixelInfo.lensPos[0], pixelInfo.lensPos[1], 0.f);
-            //Color lensSum = Color(0.f, 0.f, 0.f);
-            Color lensMean = lensSum*invSampleCount;
+		int x = Floor2Int(sd.imgPos[0])-xPixelStart;
+		int y = Floor2Int(sd.imgPos[1])-yPixelStart;
 
-            float depthSum = pixelInfo.depth;
-            float sqDepthSum = pixelInfo.sqDepth;
-            float depthMean = depthSum * invSampleCount;
-            float depthVar = (sqDepthSum - depthSum*depthMean) *
-                             invSampleCount_1;
-            
-            colImg(x, y) = colMean;
-            varImg(x, y) = colVar;
-            norImg(x, y) = norMean;
-            norVarImg(x, y) = norVar;
-            rhoImg(x, y) = rhoMean;            
-            rhoVarImg(x, y) = rhoVar;
-            depthImg(x, y) = depthMean;
-            depthVarImg(x, y) = depthVar;
-            //new
-            dirImg(x, y) = dirMean;
-            lensImg(x, y) = lensMean;
+		Color rgbC = Color(sd.rgb); //color in RGB
+		Color normalC = Color(sd.normal);
 
-            Feature feature, featureVar;
-            feature[0] = norMean[0];
-            feature[1] = norMean[1];
-            feature[2] = norMean[2];
-            feature[3] = rhoMean[0];
-            feature[4] = rhoMean[1];
-            feature[5] = rhoMean[2];
-            feature[6] = depthMean;
-            featureVar[0] = norVar[0];
-            featureVar[1] = norVar[1];
-            featureVar[2] = norVar[2];
-            featureVar[3] = rhoVar[0];
-            featureVar[4] = rhoVar[1];
-            featureVar[5] = rhoVar[2];
-            featureVar[6] = depthVar;
-            
-            featureImg(x, y) = feature;
-            featureVarImg(x, y) = featureVar;
-        }
+		Color rhoC = Color(sd.rho);
+
+		//new
+		Color secOriginC = Color(sd.secondOrigin);
+
+		Color lensC = Color(sd.lensPos[0], sd.lensPos[1], 0.f);
+
+		colImg(x, y) = rgbC;
+		norImg(x, y) = normalC;
+		rhoImg(x, y) = rhoC;
+		//new
+		dirImg(x, y) = secOriginC;
+		lensImg(x, y) = lensC;
+	}
 
     TwoDArray<Color> rColImg = colImg;
     /**
