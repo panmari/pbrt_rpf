@@ -73,7 +73,6 @@ SBF::SBF(int xs, int ys, int w, int h,
     featureVarImg = TwoDArray<Feature>(xPixelCount, yPixelCount);
 
     norImg = TwoDArray<Color>(xPixelCount, yPixelCount);
-    dirImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     rhoImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     depthImg = TwoDArray<float>(xPixelCount, yPixelCount);
     rhoVarImg = TwoDArray<Color>(xPixelCount, yPixelCount);
@@ -84,6 +83,10 @@ SBF::SBF(int xs, int ys, int w, int h,
     minMseImg = TwoDArray<float>(xPixelCount, yPixelCount);
     adaptImg = TwoDArray<float>(xPixelCount, yPixelCount);
     sigmaImg = TwoDArray<Color>(xPixelCount, yPixelCount);
+
+    //new:
+    dirImg = TwoDArray<Color>(xPixelCount, yPixelCount);
+    lensImg = TwoDArray<Color>(xPixelCount, yPixelCount);
 }
 
 void SBF::AddSample(const CameraSample &sample, const Spectrum &L, 
@@ -275,7 +278,6 @@ void SBF::Update(bool final) {
             depthVarImg(x, y) = depthVar;
             //new
             dirImg(x, y) = dirMean;
-            // this ends up in a seg fault? Oo
             lensImg(x, y) = lensMean;
 
             Feature feature, featureVar;
