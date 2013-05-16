@@ -74,15 +74,17 @@ private:
     TwoDArray<Color> FloatImageToColor(const TwoDArray<float> &image) const;
     float CalculateAvgSpp() const;
 
+    int sampleCount;
+
     struct PixelInfo {
         PixelInfo() {
             for(int i = 0; i < 3; i++) {
                 Lxyz[i] = sqLxyz[i] =
                     normal[i] = sqNormal[i] = 
                     rho[i] = sqRho[i] =  
-                    depth = sqDepth = dir[i] =
-                    lensPos[i] = 0.f;
+                    depth = sqDepth = dir[i] = 0.f;
             }
+            lensPos[0] = lensPos[1] = time = 0.f;
             sampleCount = 0;
         }
         float Lxyz[3];
@@ -97,9 +99,30 @@ private:
         int sampleCount;
 
         //new
-        float lensPos[3];
+        float lensPos[2];
+        float time;
         float dir[3];
     };
+
+    struct SampleData {
+            SampleData() {
+                for(int i = 0; i < 3; i++) {
+                    Lxyz[i] =
+                        normal[i] =
+                        rho[i] = dir[i] = 0.f;
+                }
+                lensPos[0] = lensPos[1] = time = 0.f;
+            }
+            float Lxyz[3];
+            float normal[3];
+            float rho[3];
+            int sampleCount;
+
+            //new
+            float lensPos[2];
+            float time;
+            float dir[3];
+        };
 
     FilterType fType;
     ReconstructionFilter rFilter;
@@ -108,6 +131,7 @@ private:
     float interMseSigma, finalMseSigma;
 
     BlockedArray<PixelInfo> *pixelInfos;    
+    vector<SampleData> allSamples;
     int xPixelStart, yPixelStart;
     int xPixelCount, yPixelCount;
 
@@ -137,6 +161,7 @@ private:
     //new debug img
 	TwoDArray<Color> dirImg;
 	TwoDArray<Color> lensImg;
+	TwoDArray<float> timeImg;
 };
 
 #endif //PBRT_SBF_H

@@ -66,7 +66,8 @@ SBF::SBF(int xs, int ys, int w, int h,
     xPixelCount = w;
     yPixelCount = h;
     pixelInfos = new BlockedArray<PixelInfo>(xPixelCount, yPixelCount);
-
+    // TODO replace 8 with spp
+    allSamples = vector<SampleData> (xPixelCount*yPixelCount*8);
     colImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     varImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     featureImg = TwoDArray<Feature>(xPixelCount, yPixelCount);
@@ -87,6 +88,8 @@ SBF::SBF(int xs, int ys, int w, int h,
     //new:
     dirImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     lensImg = TwoDArray<Color>(xPixelCount, yPixelCount);
+    timeImg = TwoDArray<float>(xPixelCount, yPixelCount);
+    sampleCount = 0;
 }
 
 void SBF::AddSample(const CameraSample &sample, const Spectrum &L, 
@@ -106,7 +109,9 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
     float rhoXYZ[3];
     isect.rho.ToRGB(rhoXYZ);
 
+
     // TODO: does AtomicAdd really needed?
+    //TODO remove atomic Add
     for(int i = 0; i < 3; i++) {
         AtomicAdd(&(pixelInfo.Lxyz[i]), xyz[i]);        
         AtomicAdd(&(pixelInfo.sqLxyz[i]), xyz[i]*xyz[i]);
@@ -122,10 +127,20 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
     }
     AtomicAdd(&(pixelInfo.lensPos[0]), sample.lensU); //should this save a copy in the array?
     AtomicAdd(&(pixelInfo.lensPos[1]), sample.lensV);
+    AtomicAdd(&(pixelInfo.time), sample.time);
 
     AtomicAdd(&(pixelInfo.depth), isect.depth);
     AtomicAdd(&(pixelInfo.sqDepth), isect.depth*isect.depth);
     AtomicAdd((AtomicInt32*)&(pixelInfo.sampleCount), (int32_t)1);
+    //not so smart? >.<
+    SampleData sd = allSamples[sampleCount++];
+    for(int i = 0; i < 3; i++) {
+    	sd.Lxyz[i] = xyz[i];
+    	sd.rho[i] = rhoXYZ[i];
+    	sd.normal[i] = isect.shadingN[i];
+    }
+	sd.lensPos[0] = sample.lensU;
+	sd.time = sample.time;
 }
 
 void SBF::GetAdaptPixels(int spp, vector<vector<int> > &pixels) {
@@ -210,6 +225,8 @@ void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
         //new:
         WriteImage(filenameBase+"_sbf_dir"+filenameExt, dirImg, xres, yres);
         WriteImage(filenameBase+"_sbf_lens"+filenameExt, lensImg, xres, yres);
+        TwoDArray<Color> timeColImg = FloatImageToColor(timeImg);
+        WriteImage(filenameBase+"_sbf_time"+filenameExt, timeColImg, xres, yres);
     }
 }
 
@@ -237,8 +254,8 @@ void SBF::Update(bool final) {
             PixelInfo &pixelInfo = (*pixelInfos)(x, y);
             float invSampleCount = 1.f/(float)pixelInfo.sampleCount;
             float invSampleCount_1 = 1.f/((float)pixelInfo.sampleCount-1.f);
-            Color colSum = Color(pixelInfo.Lxyz);
-            Color sqColSum = Color(pixelInfo.sqLxyz);
+            Color colSum = Color(pixelInfo.Lxyz); //color in RGB
+            Color sqColSum = Color(pixelInfo.sqLxyz); //square of the color?
             Color colMean = colSum*invSampleCount;
             Color colVar = (sqColSum - colSum*colMean) * 
                            invSampleCount_1 * invSampleCount;
@@ -258,7 +275,7 @@ void SBF::Update(bool final) {
             Color dirSum = Color(pixelInfo.dir);
             Color dirMean = dirSum*invSampleCount;
             
-            Color lensSum = Color(pixelInfo.lensPos);
+            Color lensSum = Color(pixelInfo.lensPos[0], pixelInfo.lensPos[1], 0.f);
             //Color lensSum = Color(0.f, 0.f, 0.f);
             Color lensMean = lensSum*invSampleCount;
 
