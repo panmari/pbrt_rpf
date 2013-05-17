@@ -86,7 +86,7 @@ SBF::SBF(int xs, int ys, int w, int h,
     sigmaImg = TwoDArray<Color>(xPixelCount, yPixelCount);
 
     //new:
-    dirImg = TwoDArray<Color>(xPixelCount, yPixelCount);
+    secOrigImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     lensImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     timeImg = TwoDArray<float>(xPixelCount, yPixelCount);
     sampleCount = 0;
@@ -100,40 +100,16 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
     if (x < 0 || y < 0 || x >= xPixelCount || y >= yPixelCount) 
         return;    
 
-    // Update PixelInfo structure
-    PixelInfo &pixelInfo = (*pixelInfos)(x, y);
-
     // Convert to 3d color space from Spectrum
     float xyz[3];
     L.ToRGB(xyz);
     float rhoXYZ[3];
     isect.rho.ToRGB(rhoXYZ);
 
-
-    // TODO: does AtomicAdd really needed?
-    //TODO remove atomic Add
-    for(int i = 0; i < 3; i++) {
-        AtomicAdd(&(pixelInfo.Lxyz[i]), xyz[i]);        
-        AtomicAdd(&(pixelInfo.sqLxyz[i]), xyz[i]*xyz[i]);
-        AtomicAdd(&(pixelInfo.rho[i]), rhoXYZ[i]);
-        AtomicAdd(&(pixelInfo.sqRho[i]), rhoXYZ[i]*rhoXYZ[i]);
-        //new
-        AtomicAdd(&(pixelInfo.dir[i]), isect.dir[i]);
-        // Sometimes pbrt returns NaN normals, we simply ignore them here
-        if(!isect.shadingN.HasNaNs()) {
-            AtomicAdd(&(pixelInfo.normal[i]), isect.shadingN[i]);            
-            AtomicAdd(&(pixelInfo.sqNormal[i]), isect.shadingN[i]*isect.shadingN[i]);
-        }
-    }
-    AtomicAdd(&(pixelInfo.lensPos[0]), sample.lensU); //should this save a copy in the array?
-    AtomicAdd(&(pixelInfo.lensPos[1]), sample.lensV);
-    AtomicAdd(&(pixelInfo.time), sample.time);
-
-    AtomicAdd(&(pixelInfo.depth), isect.depth);
-    AtomicAdd(&(pixelInfo.sqDepth), isect.depth*isect.depth);
-    AtomicAdd((AtomicInt32*)&(pixelInfo.sampleCount), (int32_t)1);
     //TODO: does this work for multiple threads??
     SampleData& sd = allSamples[sampleCount++];
+    sd.x = x;
+    sd.y = y;
     for(int i = 0; i < 3; i++) {
     	sd.rgb[i] = xyz[i];
     	sd.rho[i] = rhoXYZ[i];
@@ -218,17 +194,10 @@ void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
             }
         WriteImage(filenameBase+"_sbf_nor"+filenameExt, norImg, xres, yres);
 
-        WriteImage(filenameBase+"_sbf_nor_var"+filenameExt, norVarImg, xres, yres);
         WriteImage(filenameBase+"_sbf_rho"+filenameExt, rhoImg, xres, yres);
-        WriteImage(filenameBase+"_sbf_rho_var"+filenameExt, rhoVarImg, xres, yres);
-
-        TwoDArray<Color> depthColImg = FloatImageToColor(depthImg);
-        TwoDArray<Color> dvColImg = FloatImageToColor(depthVarImg);
-        WriteImage(filenameBase+"_sbf_dep"+filenameExt, depthColImg, xres, yres);
-        WriteImage(filenameBase+"_sbf_dep_var"+filenameExt, dvColImg, xres, yres);
 
         //new:
-        WriteImage(filenameBase+"_sbf_dir"+filenameExt, dirImg, xres, yres);
+        WriteImage(filenameBase+"_sbf_second_orig"+filenameExt, secOrigImg, xres, yres);
         WriteImage(filenameBase+"_sbf_lens"+filenameExt, lensImg, xres, yres);
         TwoDArray<Color> timeColImg = FloatImageToColor(timeImg);
         WriteImage(filenameBase+"_sbf_time"+filenameExt, timeColImg, xres, yres);
@@ -250,8 +219,15 @@ TwoDArray<Color> SBF::FloatImageToColor(const TwoDArray<float> &image) const {
     return colorImg;
 }
 
+bool SBF::comparator( SBF::SampleData sd1, SBF::SampleData sd2) {
+	if (sd1.y == sd2.y)
+			return sd1.x < sd2.x;
+	else return sd1.y < sd2.y;
+}
+
 void SBF::Update(bool final) {
     ProgressReporter reporter(1, "Updating");
+    std::sort(allSamples.begin(), allSamples.end(), SBF::comparator);
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
     for(int i = 0; i < yPixelCount*xPixelCount*8; i++) {
 		SampleData sd = allSamples[i];
@@ -273,7 +249,7 @@ void SBF::Update(bool final) {
 		norImg(x, y) = normalC;
 		rhoImg(x, y) = rhoC;
 		//new
-		dirImg(x, y) = secOriginC;
+		secOrigImg(x, y) = secOriginC;
 		lensImg(x, y) = lensC;
 	}
 

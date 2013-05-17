@@ -112,19 +112,23 @@ private:
                         rho[i] = dir[i] = 0.f;
                 }
                 lensPos[0] = lensPos[1] = time = 0.f;
+                x = y = 0;
             }
+            int x, y;
+
             float rgb[3];
             float normal[3];
             float secondOrigin[3];
             float thirdOrigin[3];
             float rho[3];
-            int sampleCount;
 
             float imgPos[2];
             float lensPos[2];
             float time;
             float dir[3];
         };
+
+    static bool comparator(SBF::SampleData sd1, SBF::SampleData sd2);
 
     FilterType fType;
     ReconstructionFilter rFilter;
@@ -161,7 +165,7 @@ private:
     RNG rng;
 
     //new debug img
-	TwoDArray<Color> dirImg;
+	TwoDArray<Color> secOrigImg;
 	TwoDArray<Color> lensImg;
 	TwoDArray<float> timeImg;
 };
