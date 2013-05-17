@@ -91,7 +91,7 @@ SBF::SBF(int xs, int ys, int w, int h,
     thirdOrigImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     lensImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     timeImg = TwoDArray<float>(xPixelCount, yPixelCount);
-    sampleCount = 0;
+    sampleCount = -1;
 }
 
 void SBF::AddSample(const CameraSample &sample, const Spectrum &L, 
@@ -108,8 +108,8 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
     float rhoXYZ[3];
     isect.rho.ToRGB(rhoXYZ);
 
-    //TODO: does this work for multiple threads??
-    SampleData& sd = allSamples[sampleCount++];
+    int idx = AtomicAdd(&sampleCount, 1);
+    SampleData& sd = allSamples[idx];
     sd.x = x;
     sd.y = y;
     for(int i = 0; i < 3; i++) {

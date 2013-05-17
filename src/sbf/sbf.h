@@ -74,7 +74,7 @@ private:
     TwoDArray<Color> FloatImageToColor(const TwoDArray<float> &image) const;
     float CalculateAvgSpp() const;
 
-    int sampleCount;
+    long volatile sampleCount;
 
     struct PixelInfo {
         PixelInfo() {
