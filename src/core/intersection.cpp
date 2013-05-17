@@ -48,9 +48,6 @@ BSDF *Intersection::GetBSDF(const RayDifferential &ray,
     //rho = bsdf->rho(-ray.d, rng);
     rho = bsdf->K();
     shadingN = bsdf->N();
-
-    //dir = *(new Vector(1.0, 0.0, 1.0));
-    dir = ray.d; //does this work?
     return bsdf;
 }
 

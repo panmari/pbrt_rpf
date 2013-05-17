@@ -108,8 +108,9 @@ private:
             SampleData() {
                 for(int i = 0; i < 3; i++) {
                     rgb[i] =
-                        normal[i] =
-                        rho[i] = dir[i] = 0.f;
+					normal[i] = secondNormal[i] =
+					rho[i] =
+					secondOrigin[i] = thirdOrigin[i] = 0.f;
                 }
                 lensPos[0] = lensPos[1] = time = 0.f;
                 x = y = 0;
@@ -117,15 +118,19 @@ private:
             int x, y;
 
             float rgb[3];
+            //features
             float normal[3];
+            float secondNormal[3];
+            float rho[3];
             float secondOrigin[3];
             float thirdOrigin[3];
-            float rho[3];
 
             float imgPos[2];
+
+            //random parameters
             float lensPos[2];
             float time;
-            float dir[3];
+            //TODO: add input/output color?
         };
 
     static bool comparator(SBF::SampleData sd1, SBF::SampleData sd2);
@@ -165,7 +170,9 @@ private:
     RNG rng;
 
     //new debug img
+    TwoDArray<Color> secNormalImg;
 	TwoDArray<Color> secOrigImg;
+	TwoDArray<Color> thirdOrigImg;
 	TwoDArray<Color> lensImg;
 	TwoDArray<float> timeImg;
 };

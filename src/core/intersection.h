@@ -50,7 +50,6 @@ struct Intersection {
         shapeId = primitiveId = 0;
         rayEpsilon = 0.f;
         rho = Spectrum();
-        depth = 0.f;
     }
     BSDF *GetBSDF(const RayDifferential &ray, MemoryArena &arena) const;
     BSSRDF *GetBSSRDF(const RayDifferential &ray, MemoryArena &arena) const;
@@ -64,9 +63,7 @@ struct Intersection {
     float rayEpsilon;
         
     mutable Spectrum rho;
-    mutable Normal shadingN;
-    mutable Vector dir;
-    mutable float depth;
+    mutable Normal shadingN, secondNormal;
     mutable Point secondOrigin, thirdOrigin;
 };
 

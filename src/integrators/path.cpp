@@ -71,8 +71,10 @@ Spectrum PathIntegrator::Li(const Scene *scene, const Renderer *renderer,
         const Point &p = bsdf->dgShading.p;
         const Normal &n = bsdf->dgShading.nn;
         Vector wo = -ray.d;
-        if (bounces == 1)
+        if (bounces == 1) {
         	isect.secondOrigin = p;
+        	isect.secondNormal = n;
+        }
         if (bounces == 2)
         	isect.thirdOrigin = p;
         if (bounces < SAMPLE_DEPTH)

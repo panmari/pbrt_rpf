@@ -86,7 +86,9 @@ SBF::SBF(int xs, int ys, int w, int h,
     sigmaImg = TwoDArray<Color>(xPixelCount, yPixelCount);
 
     //new:
+    secNormalImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     secOrigImg = TwoDArray<Color>(xPixelCount, yPixelCount);
+    thirdOrigImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     lensImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     timeImg = TwoDArray<float>(xPixelCount, yPixelCount);
     sampleCount = 0;
@@ -114,6 +116,7 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
     	sd.rgb[i] = xyz[i];
     	sd.rho[i] = rhoXYZ[i];
     	sd.normal[i] = isect.shadingN[i];
+    	sd.secondNormal[i] = isect.secondNormal[i];
     	sd.secondOrigin[i] = isect.secondOrigin[i];
     	sd.thirdOrigin[i] = isect.thirdOrigin[i];
     }
@@ -197,7 +200,9 @@ void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
         WriteImage(filenameBase+"_sbf_rho"+filenameExt, rhoImg, xres, yres);
 
         //new:
+        WriteImage(filenameBase+"_sbf_second_normal"+filenameExt, secNormalImg, xres, yres);
         WriteImage(filenameBase+"_sbf_second_orig"+filenameExt, secOrigImg, xres, yres);
+        WriteImage(filenameBase+"_sbf_third_orig"+filenameExt, thirdOrigImg, xres, yres);
         WriteImage(filenameBase+"_sbf_lens"+filenameExt, lensImg, xres, yres);
         TwoDArray<Color> timeColImg = FloatImageToColor(timeImg);
         WriteImage(filenameBase+"_sbf_time"+filenameExt, timeColImg, xres, yres);
@@ -241,15 +246,18 @@ void SBF::Update(bool final) {
 		Color rhoC = Color(sd.rho);
 
 		//new
+		Color secNormalC = Color(sd.secondNormal);
 		Color secOriginC = Color(sd.secondOrigin);
-
+		Color thirdOriginC = Color(sd.thirdOrigin);
 		Color lensC = Color(sd.lensPos[0], sd.lensPos[1], 0.f);
 
 		colImg(x, y) = rgbC;
 		norImg(x, y) = normalC;
 		rhoImg(x, y) = rhoC;
 		//new
+		secNormalImg(x, y) = secNormalC;
 		secOrigImg(x, y) = secOriginC;
+		thirdOrigImg(x, y) = thirdOriginC;
 		lensImg(x, y) = lensC;
 	}
 

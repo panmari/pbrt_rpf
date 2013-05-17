@@ -117,7 +117,6 @@ void SBFRendererTask::Run() {
             {
                 PBRT_STARTED_ADDING_IMAGE_SAMPLE(&samples[i], &rays[i], &Ls[i], &Ts[i]);
                 isects[i].shadingN = Faceforward(isects[i].shadingN, rays[i].d);
-                isects[i].depth = min(rays[i].maxt, maxDepth)/maxDepth;
                 camera->film->AddSample(samples[i], Ls[i], isects[i]);
                 PBRT_FINISHED_ADDING_IMAGE_SAMPLE();
             }
