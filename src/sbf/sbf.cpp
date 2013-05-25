@@ -40,6 +40,8 @@
 #include "progressreporter.h"
 #include "CrossBilateralFilter.h"
 #include "CrossNLMFilter.h"
+#include "RandomParameterFilter.h"
+
 #include "fmath.hpp"
 
 #include <limits>
@@ -113,7 +115,7 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
     sd.x = x;
     sd.y = y;
     for(int i = 0; i < 3; i++) {
-    	sd.rgb[i] = xyz[i];
+    	sd.inputColors[i] = sd.rgb[i] = xyz[i];
     	sd.rho[i] = rhoXYZ[i];
     	sd.normal[i] = isect.shadingN[i];
     	sd.secondNormal[i] = isect.secondNormal[i];
@@ -310,7 +312,7 @@ void SBF::Update(bool final) {
         CrossBilateralFilter mseFilter(final ? finalMseSigma : interMseSigma, 0.f, 
                                        sigmaF, xPixelCount, yPixelCount); 
         mseFilter.ApplyMSE(mseArray, featureImg, featureVarImg, fltMseArray);
-    } else { //fType == CROSS_NLM_FILTER
+    } else if (fType == CROSS_NLM_FILTER) {
         CrossNLMFilter nlmFilter(final ? 20 : 10, 2, sigma, sigmaF, 
                 xPixelCount, yPixelCount);
         nlmFilter.Apply(colImg, featureImg, featureVarImg, 
@@ -320,6 +322,9 @@ void SBF::Update(bool final) {
                                        sigmaF, xPixelCount, yPixelCount);   
         mseFilter.ApplyMSE(mseArray, featureImg, featureVarImg, fltMseArray);
         //filter.ApplyMSE(0.04f, mseArray, rColImg, featureImg, featureVarImg, fltMseArray);
+    } else { //fType == RANDOM_PARAMETER_FILTER
+    	//RandomParameterFilter rpf();
+
     }
 
     minMseImg = numeric_limits<float>::infinity();   

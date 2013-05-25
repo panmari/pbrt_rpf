@@ -51,7 +51,8 @@ class SBF {
 public:       
     enum FilterType {
         CROSS_BILATERAL_FILTER,
-        CROSS_NLM_FILTER
+        CROSS_NLM_FILTER,
+        RANDOM_PARAMETER_FILTER
     };
 
     SBF(int xs, int ys, int w, int h, 
@@ -110,7 +111,8 @@ private:
                     rgb[i] =
 					normal[i] = secondNormal[i] =
 					rho[i] =
-					secondOrigin[i] = thirdOrigin[i] = 0.f;
+					secondOrigin[i] = thirdOrigin[i] =
+					inputColors[i] = outputColors[i] = 0.f;
                 }
                 lensPos[0] = lensPos[1] = time = 0.f;
                 x = y = 0;
@@ -130,7 +132,10 @@ private:
             //random parameters
             float lensPos[2];
             float time;
-            //TODO: add input/output color?
+
+            // input/output colors:
+            float inputColors[3];
+            float outputColors[3];
         };
 
     static bool comparator(SBF::SampleData sd1, SBF::SampleData sd2);
