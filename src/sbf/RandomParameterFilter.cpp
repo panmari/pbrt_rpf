@@ -38,12 +38,6 @@
 RandomParameterFilter::RandomParameterFilter() {
 }
 
-void RandomParameterFilter::Apply(const TwoDArray<Color> &img,
-                                 const TwoDArray<Feature> &featureImg,
-                                 const TwoDArray<Feature> &featureVarImg,
-                                 const TwoDArray<Color> &rImg,
-                                 const TwoDArray<Color> &varImg,
-                                 TwoDArray<Color> &outImg,                                  
-                                 TwoDArray<float> &outMSE) const {
+void RandomParameterFilter::Apply(const vector<SampleData> &allSamples) const {
 
 }

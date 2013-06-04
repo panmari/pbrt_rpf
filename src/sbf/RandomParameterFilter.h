@@ -41,18 +41,13 @@
 #include "TwoDArray.h"
 #include "VectorNf.h"
 #include "pbrt.h"
+#include "SampleData.h"
 
 class RandomParameterFilter {
 public:
     RandomParameterFilter();
 
-    void Apply(const TwoDArray<Color> &img,
-               const TwoDArray<Feature> &featureImg,
-               const TwoDArray<Feature> &featureVarImg,
-               const TwoDArray<Color> &rImg,
-               const TwoDArray<Color> &varImg,
-               TwoDArray<Color> &outImg,
-               TwoDArray<float> &outMSE) const;
+    void Apply(const vector<SampleData> &allSamples) const;
 
 private:    
 };

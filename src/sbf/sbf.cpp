@@ -110,7 +110,7 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
     float rhoXYZ[3];
     isect.rho.ToRGB(rhoXYZ);
 
-    int idx = AtomicAdd(&sampleCount, 1);
+    int idx = AtomicAdd(&sampleCount, (long)1);
     SampleData& sd = allSamples[idx];
     sd.x = x;
     sd.y = y;
@@ -226,7 +226,7 @@ TwoDArray<Color> SBF::FloatImageToColor(const TwoDArray<float> &image) const {
     return colorImg;
 }
 
-bool SBF::comparator( SBF::SampleData sd1, SBF::SampleData sd2) {
+bool SBF::comparator(SampleData sd1, SampleData sd2) {
 	if (sd1.y == sd2.y)
 			return sd1.x < sd2.x;
 	else return sd1.y < sd2.y;
@@ -323,7 +323,8 @@ void SBF::Update(bool final) {
         mseFilter.ApplyMSE(mseArray, featureImg, featureVarImg, fltMseArray);
         //filter.ApplyMSE(0.04f, mseArray, rColImg, featureImg, featureVarImg, fltMseArray);
     } else { //fType == RANDOM_PARAMETER_FILTER
-    	//RandomParameterFilter rpf();
+    	RandomParameterFilter rpf;
+    	rpf.Apply(allSamples);
 
     }
 
