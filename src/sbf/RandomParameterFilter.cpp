@@ -34,10 +34,26 @@
 
 #include "fmath.hpp"
 #include "parallel.h"
+#include "progressreporter.h"
+
 
 RandomParameterFilter::RandomParameterFilter() {
+
 }
 
-void RandomParameterFilter::Apply(const vector<SampleData> &allSamples) const {
+const int BOX_SIZE[] = {55, 35, 17, 7};
+const float MAX_SAMPLES_FACTOR = {0.02f, 0.04f, 0.3f, 0.5f};
 
+void RandomParameterFilter::Apply(const vector<SampleData> &allSamples, int w, int h, int spp) const {
+	ProgressReporter reporter(4, "Applying RPF filter");
+	for (int iterStep = 0; iterStep < 4; iterStep++) {
+		reporter.Update(iterStep);
+		for (int pixel = 0; pixel < w*h; pixel++) {
+			SampleData &firstSamplePixel = allSamples[pixel*spp];
+			determineNeighbourhood(BOX_SIZE[iterStep], w, h, firstSamplePixel);
+
+		}
+	}
+
+	reporter.Done();
 }

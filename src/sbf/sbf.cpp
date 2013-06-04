@@ -233,7 +233,7 @@ bool SBF::comparator(SampleData sd1, SampleData sd2) {
 }
 
 void SBF::Update(bool final) {
-    ProgressReporter reporter(1, "Updating");
+    ProgressReporter reporter(1, "Dumping debug images");
     std::sort(allSamples.begin(), allSamples.end(), SBF::comparator);
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
     for(int i = 0; i < yPixelCount*xPixelCount*8; i++) {
@@ -262,6 +262,8 @@ void SBF::Update(bool final) {
 		thirdOrigImg(x, y) = thirdOriginC;
 		lensImg(x, y) = lensC;
 	}
+    reporter.Update();
+    reporter.Done();
 
     TwoDArray<Color> rColImg = colImg;
     /**
@@ -343,8 +345,5 @@ void SBF::Update(bool final) {
                 }
             }
     }
-
-    reporter.Update();
-    reporter.Done();
 }
 
