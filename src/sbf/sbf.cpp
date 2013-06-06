@@ -110,7 +110,7 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
     float rhoXYZ[3];
     isect.rho.ToRGB(rhoXYZ);
 
-    int idx = AtomicAdd(&sampleCount, (long)1);
+    int idx = AtomicAdd(&sampleCount, 1);
     SampleData& sd = allSamples[idx];
     sd.x = x;
     sd.y = y;
@@ -325,7 +325,7 @@ void SBF::Update(bool final) {
         mseFilter.ApplyMSE(mseArray, featureImg, featureVarImg, fltMseArray);
         //filter.ApplyMSE(0.04f, mseArray, rColImg, featureImg, featureVarImg, fltMseArray);
     } else { //fType == RANDOM_PARAMETER_FILTER
-    	RandomParameterFilter rpf;
+    	RandomParameterFilter rpf(xPixelCount, yPixelCount, 8);
     	rpf.Apply(allSamples);
 
     }

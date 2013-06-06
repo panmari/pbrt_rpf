@@ -36,24 +36,36 @@
 #include "parallel.h"
 #include "progressreporter.h"
 
+const int BOX_SIZE[] = {55, 35, 17, 7};
+const float MAX_SAMPLES_FACTOR[] = {0.02f, 0.04f, 0.3f, 0.5f};
+int MAX_SAMPLES[4];
 
-RandomParameterFilter::RandomParameterFilter() {
-
+RandomParameterFilter::RandomParameterFilter(const int width, const int height, const int spp) {
+	this->w = width;
+	this->h = height;
+	this->spp = spp;
+	for (int i = 0; i < 4; i++) {
+		MAX_SAMPLES[i] = pow(BOX_SIZE[i],2)*spp*MAX_SAMPLES_FACTOR[0];
+	}
 }
 
-const int BOX_SIZE[] = {55, 35, 17, 7};
-const float MAX_SAMPLES_FACTOR = {0.02f, 0.04f, 0.3f, 0.5f};
-
-void RandomParameterFilter::Apply(const vector<SampleData> &allSamples, int w, int h, int spp) const {
+void RandomParameterFilter::Apply(const vector<SampleData> &allSamples) const {
 	ProgressReporter reporter(4, "Applying RPF filter");
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		reporter.Update(iterStep);
 		for (int pixel = 0; pixel < w*h; pixel++) {
-			SampleData &firstSamplePixel = allSamples[pixel*spp];
-			determineNeighbourhood(BOX_SIZE[iterStep], w, h, firstSamplePixel);
+			SampleData firstSamplePixel = allSamples[pixel*spp];
+			determineNeighbourhood(BOX_SIZE[iterStep], firstSamplePixel);
 
 		}
 	}
 
 	reporter.Done();
+}
+
+vector<SampleData> RandomParameterFilter::determineNeighbourhood(int boxsize,
+		SampleData &allSamplesPixel) {
+
+	 	vector<SampleData> neighbourhood.reserve(100);
+	return blah;
 }

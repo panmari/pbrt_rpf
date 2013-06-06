@@ -45,11 +45,13 @@
 
 class RandomParameterFilter {
 public:
-    RandomParameterFilter();
+    RandomParameterFilter(const int width, const int height, const int spp);
 
     void Apply(const vector<SampleData> &allSamples) const;
 
-private:    
+private:
+    vector<SampleData> determineNeighbourhood(int boxsize, SampleData &allSamplesPixel);
+    int h, w, spp;
 };
 
 #endif
