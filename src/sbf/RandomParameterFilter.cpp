@@ -89,6 +89,9 @@ int* RandomParameterFilter::getGaussian(float stddev, int meanX, int meanY) {
 		V2 = 2*rng.RandomFloat() - 1;
 		S = V1*V1 + V2*V2;
 	} while(S >= 1);
+	// possible solutions:
+	// - make a 2d vector struct/class
+	// - use a 3d vector with only x/y coordinates set
 	int result[2]; //this variable is only locale -.-
 	result[0] = sqrt(-2 * log(S)/S) * V1 *stddev + meanX;
 	result[1] = sqrt(-2 * log(S)/S) * V2 * stddev + meanY;
