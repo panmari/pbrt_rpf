@@ -44,18 +44,19 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height, 
 	this->w = width;
 	this->h = height;
 	this->spp = spp;
+	this->rng = RNG(42);
 	for (int i = 0; i < 4; i++) {
 		MAX_SAMPLES[i] = pow(BOX_SIZE[i],2)*spp*MAX_SAMPLES_FACTOR[0];
 	}
 }
 
-void RandomParameterFilter::Apply(const vector<SampleData> &allSamples) const {
+void RandomParameterFilter::Apply(const vector<SampleData> &allSamples) {
 	ProgressReporter reporter(4, "Applying RPF filter");
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		reporter.Update(iterStep);
-		for (int pixel = 0; pixel < w*h; pixel++) {
-			SampleData firstSamplePixel = allSamples[pixel*spp];
-			determineNeighbourhood(BOX_SIZE[iterStep], firstSamplePixel);
+		for (int pixel_nr = 0; pixel_nr < w*h; pixel_nr++) {
+			const int pixel_idx = pixel_nr*spp;
+			vector<SampleData> neighbourhood = determineNeighbourhood(BOX_SIZE[iterStep], MAX_SAMPLES[iterStep], pixel_idx, allSamples);
 
 		}
 	}
@@ -63,9 +64,33 @@ void RandomParameterFilter::Apply(const vector<SampleData> &allSamples) const {
 	reporter.Done();
 }
 
-vector<SampleData> RandomParameterFilter::determineNeighbourhood(int boxsize,
-		SampleData &allSamplesPixel) {
+vector<SampleData> RandomParameterFilter::determineNeighbourhood(const int boxsize, int maxSamples,
+		 const int pixel_idx, const vector<SampleData> &allSamples) {
+	 	vector<SampleData> neighbourhood;
+	 	neighbourhood.reserve(maxSamples);
+	 	// add all samples of current pixel
+	 	for (int i = 0; i < spp; i++) {
+	 		neighbourhood.push_back(allSamples[pixel_idx + i]);
+	 	}
 
-	 	vector<SampleData> neighbourhood.reserve(100);
-	return blah;
+	 	// add more samples from neighbourhood
+	 	for (int i = 0; i < maxSamples - spp; i++) {
+
+	 	}
+	return neighbourhood;
+}
+
+
+int* RandomParameterFilter::getGaussian(float stddev, int meanX, int meanY) {
+	// Box-Muller method, adapted from @ jtlehtin's code.
+	float S, V1, V2;
+	do {
+		V1 = 2*rng.RandomFloat() - 1;
+		V2 = 2*rng.RandomFloat() - 1;
+		S = V1*V1 + V2*V2;
+	} while(S >= 1);
+	int result[2]; //this variable is only locale -.-
+	result[0] = sqrt(-2 * log(S)/S) * V1 *stddev + meanX;
+	result[1] = sqrt(-2 * log(S)/S) * V2 * stddev + meanY;
+	return result;
 }

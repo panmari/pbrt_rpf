@@ -42,16 +42,22 @@
 #include "VectorNf.h"
 #include "pbrt.h"
 #include "SampleData.h"
+#include "rng.h"
 
 class RandomParameterFilter {
 public:
     RandomParameterFilter(const int width, const int height, const int spp);
 
-    void Apply(const vector<SampleData> &allSamples) const;
+    void Apply(const vector<SampleData> &allSamples);
 
 private:
-    vector<SampleData> determineNeighbourhood(int boxsize, SampleData &allSamplesPixel);
+    vector<SampleData> determineNeighbourhood(const int boxsize, int maxSamples,
+    			const int pixel_idx, const vector<SampleData> &allSamples);
+
+    int* getGaussian(float stddev, int meanX, int meanY);
+
     int h, w, spp;
+    RNG rng; //random generator
 };
 
 #endif
