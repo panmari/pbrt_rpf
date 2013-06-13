@@ -71,11 +71,16 @@ public:
     void WriteImage(const string &filename, int xres, int yres, bool dump);
 
     void Update(bool final);
+
+    void SetSPP(int spp) {
+    	this->spp = spp;
+    	allSamples.resize(xPixelCount * yPixelCount * spp);
+    }
 private:
     void WriteImage(const string &filename, const TwoDArray<Color> &image, int xres, int yres) const;
     TwoDArray<Color> FloatImageToColor(const TwoDArray<float> &image) const;
     float CalculateAvgSpp() const;
-
+    int spp;
     long volatile sampleCount;
 
     struct PixelInfo {

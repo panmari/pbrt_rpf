@@ -64,6 +64,7 @@ public:
     void WriteImage(float splatScale);
     void UpdateDisplay(int x0, int y0, int x1, int y1, float splatScale) {}
     void GetAdaptPixels(int spp, vector<vector<int> > &pixels);
+    void SetSPP(int spp) { sbf->SetSPP(spp); }
 private:
     // SBFImageFilm Private Data
     Filter *filter;
