@@ -51,6 +51,7 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height, 
 }
 
 void RandomParameterFilter::Apply(const vector<SampleData> &allSamples) {
+	this->allSamples = allSamples;
 	ProgressReporter reporter(4, "Applying RPF filter");
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		reporter.Update(iterStep);
@@ -65,23 +66,30 @@ void RandomParameterFilter::Apply(const vector<SampleData> &allSamples) {
 }
 
 vector<SampleData> RandomParameterFilter::determineNeighbourhood(const int boxsize, int maxSamples,
-		 const int pixel_idx, const vector<SampleData> &allSamples) {
+		 const int pixelIdx, const vector<SampleData> &allSamples) {
 	 	vector<SampleData> neighbourhood;
 	 	neighbourhood.reserve(maxSamples);
 	 	// add all samples of current pixel
 	 	for (int i = 0; i < spp; i++) {
-	 		neighbourhood.push_back(allSamples[pixel_idx + i]);
+	 		neighbourhood.push_back(allSamples[pixelIdx + i]);
 	 	}
 
 	 	// add more samples from neighbourhood
-	 	for (int i = 0; i < maxSamples - spp; i++) {
+	 	const float stdv = boxsize/4.f;
 
+	 	SampleData pixelMean;
+	 	SampleData pixelStd;
+	 	getPixelMeanAndStd(pixelIdx, pixelMean, pixelStd);
+
+	 	for (int i = 0; i < maxSamples - spp; i++) {
+	 		int x, y;
+	 		getGaussian(stdv, pixelMean.x, pixelMean.y, x, y);
+	 		getRandomSampleAt(x, y)
 	 	}
 	return neighbourhood;
 }
 
-
-int* RandomParameterFilter::getGaussian(float stddev, int meanX, int meanY) {
+void RandomParameterFilter::getGaussian(float stddev, int meanX, int meanY, int &x, int &y) {
 	// Box-Muller method, adapted from @ jtlehtin's code.
 	float S, V1, V2;
 	do {
@@ -89,11 +97,7 @@ int* RandomParameterFilter::getGaussian(float stddev, int meanX, int meanY) {
 		V2 = 2*rng.RandomFloat() - 1;
 		S = V1*V1 + V2*V2;
 	} while(S >= 1);
-	// possible solutions:
-	// - make a 2d vector struct/class
-	// - use a 3d vector with only x/y coordinates set
-	int result[2]; //this variable is only locale -.-
-	result[0] = sqrt(-2 * log(S)/S) * V1 *stddev + meanX;
-	result[1] = sqrt(-2 * log(S)/S) * V2 * stddev + meanY;
-	return result;
+
+	x = sqrt(-2 * log(S)/S) * V1 *stddev + meanX;
+	y = sqrt(-2 * log(S)/S) * V2 * stddev + meanY;
 }

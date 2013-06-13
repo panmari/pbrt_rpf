@@ -54,9 +54,14 @@ private:
     vector<SampleData> determineNeighbourhood(const int boxsize, int maxSamples,
     			const int pixel_idx, const vector<SampleData> &allSamples);
 
-    int* getGaussian(float stddev, int meanX, int meanY);
+    void getGaussian(float stddev, int meanX, int meanY, int &x, int &y);
+
+    SampleData& getRandomSampleAt(int x, int y) {
+    	return allSamples[(x + y*w)*spp + (int)(spp*rng.RandomFloat())];
+    }
 
     int h, w, spp;
+    vector<SampleData> allSamples;
     RNG rng; //random generator
 };
 
