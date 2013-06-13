@@ -77,8 +77,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(const int boxsi
 	 	// add more samples from neighbourhood
 	 	const float stdv = boxsize/4.f;
 
-	 	SampleData pixelMean;
-	 	SampleData pixelStd;
+	 	SampleData pixelMean, pixelStd;
 	 	getPixelMeanAndStd(pixelIdx, pixelMean, pixelStd);
 
 	 	for (int i = 0; i < maxSamples - spp; i++) {
@@ -88,6 +87,13 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(const int boxsi
 	 	}
 	return neighbourhood;
 }
+
+void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx, SampleData &sampleMean, SampleData &sampleStd) {
+	for (int i = 0; i < spp; i++) {
+		sampleMean //TODO
+	}
+}
+
 
 void RandomParameterFilter::getGaussian(float stddev, int meanX, int meanY, int &x, int &y) {
 	// Box-Muller method, adapted from @ jtlehtin's code.
