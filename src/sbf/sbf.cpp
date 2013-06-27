@@ -176,7 +176,7 @@ void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
     string filenameBase = filename.substr(0, filename.rfind("."));
     string filenameExt  = filename.substr(filename.rfind("."));
 
-    printf("Avg spp: %.2f\n", CalculateAvgSpp());
+    //printf("Avg spp: %.2f\n", CalculateAvgSpp());
 
     WriteImage(filenameBase+"_sbf_img"+filenameExt, colImg, xres, yres);
     WriteImage(filenameBase+"_sbf_flt"+filenameExt, fltImg, xres, yres);

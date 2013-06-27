@@ -47,15 +47,15 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 	this->spp = spp;
 	this->rng = RNG(42);
 	this->allSamples = allSamples;
-	this->DebugLog = fopen("rpf.log", "w");
+	this->debugLog = fopen("rpf.log", "w");
 	for (int i = 0; i < 4; i++) {
 		MAX_SAMPLES[i] = pow(BOX_SIZE[i], 2) * spp * MAX_SAMPLES_FACTOR[0];
 	}
 }
 
 void RandomParameterFilter::Apply() {
-	this->allSamples = allSamples;
 	ProgressReporter reporter(4, "Applying RPF filter");
+	printf("\n ** [%d,%d] ** \n", allSamples[20].x, allSamples[20].y);
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		reporter.Update(iterStep);
 		for (int pixel_nr = 0; pixel_nr < 1; pixel_nr++) {
@@ -91,9 +91,9 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		do {
 			getGaussian(stdv, pixelMean.x, pixelMean.y, x, y);
 		} while(x == pixelMean.x || y == pixelMean.y || x < 0 || y < 0 || x >= w || y >= h);
-
+		// TODO: somehow all samples returned here are only filled with 0
 		SampleData &sample = getRandomSampleAt(x, y);
-		if (DEBUG) { fprintf(DebugLog, "%d,%d", x, y); }
+		if (DEBUG) { fprintf(debugLog, "[%d,%d vs %d, %d]", x, y, sample.x, sample.y); }
 
 		bool flag = true;
 		for (int f = 0; f < SampleData::getSize() && flag; f++) {
@@ -111,8 +111,8 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	}
 
 	if (DEBUG) {
-		printf("\n Samples in Neighbourhood: \n");
-		for (unsigned int i=0;i<neighbourhood.size();i++) {fprintf(DebugLog, "[%d,%d]",neighbourhood[i].x, neighbourhood[i].y); }
+		fprintf(debugLog, "\n Samples in Neighbourhood: \n");
+		for (unsigned int i=0;i<neighbourhood.size();i++) {fprintf(debugLog, "[%d,%d]",neighbourhood[i].x, neighbourhood[i].y); }
 	}
 
 	return neighbourhood;
