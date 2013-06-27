@@ -3,7 +3,7 @@ Scale -1 1 1
 Accelerator "bvh"
 
 Film "sbfimage"    
-    "integer xresolution"    [500] "integer yresolution" [500]
+    "integer xresolution"    [50] "integer yresolution" [50]
     "string filename"        ["sibenik_rpf.exr"]
     "bool dumpfeaturebuffer" ["true"]
     "string filter"          ["rpf"] # rpf-> Random Parameter Filter
