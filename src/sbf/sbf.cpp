@@ -172,6 +172,7 @@ float SBF::CalculateAvgSpp() const {
 void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
     Update(true);
 
+    ProgressReporter reporter(1, "Dumping images");
     string filenameBase = filename.substr(0, filename.rfind("."));
     string filenameExt  = filename.substr(filename.rfind("."));
 
@@ -209,6 +210,9 @@ void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
         TwoDArray<Color> timeColImg = FloatImageToColor(timeImg);
         WriteImage(filenameBase+"_sbf_time"+filenameExt, timeColImg, xres, yres);
     }
+
+    reporter.Update();
+    reporter.Done();
 }
 
 void SBF::WriteImage(const string &filename, const TwoDArray<Color> &image, int xres, int yres) const {
@@ -233,8 +237,8 @@ bool SBF::comparator(SampleData sd1, SampleData sd2) {
 }
 
 void SBF::Update(bool final) {
-    ProgressReporter reporter(1, "Dumping debug images");
     std::sort(allSamples.begin(), allSamples.end(), SBF::comparator);
+    ProgressReporter reporter(1, "Putting together debug images");
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
     for(int i = 0; i < yPixelCount*xPixelCount*8; i++) {
 		SampleData sd = allSamples[i];

@@ -131,6 +131,8 @@ SBFImageFilm *CreateSBFImageFilm(const ParamSet &params, Filter *filter) {
         type = SBF::CROSS_BILATERAL_FILTER;
     } else if(filterType == "cnlmf") {
         type = SBF::CROSS_NLM_FILTER;
+    } else if (filterType == "rpf") {
+    	type = SBF::RANDOM_PARAMETER_FILTER;
     } else {
         Warning("[SBFFilm] Unsuporrted filter type, set to default.");
         type = SBF::CROSS_BILATERAL_FILTER;
