@@ -63,6 +63,7 @@ private:
     }
 
     int h, w, spp;
+    FILE *log;
     vector<SampleData> allSamples;
     RNG rng; //random generator
 };

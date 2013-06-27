@@ -27,6 +27,7 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  */
+#define DEBUG true
 
 #include "RandomParameterFilter.h"
 
@@ -46,6 +47,7 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 	this->spp = spp;
 	this->rng = RNG(42);
 	this->allSamples = allSamples;
+	this->log = fopen("rpf.log", "w");
 	for (int i = 0; i < 4; i++) {
 		MAX_SAMPLES[i] = pow(BOX_SIZE[i], 2) * spp * MAX_SAMPLES_FACTOR[0];
 	}
@@ -56,7 +58,8 @@ void RandomParameterFilter::Apply() {
 	ProgressReporter reporter(4, "Applying RPF filter");
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		reporter.Update(iterStep);
-		for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
+		for (int pixel_nr = 0; pixel_nr < 1; pixel_nr++) {
+		//for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
 			const int pixel_idx = pixel_nr * spp;
 			vector<SampleData> neighbourhood = determineNeighbourhood(
 					BOX_SIZE[iterStep], MAX_SAMPLES[iterStep], pixel_idx);
@@ -84,9 +87,32 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 
 	for (int i = 0; i < maxSamples - spp; i++) {
 		int x, y;
-		getGaussian(stdv, pixelMean.x, pixelMean.y, x, y);
-		getRandomSampleAt(x, y);
+		//retry, as long as its not in picture or original pixel
+		do {
+			getGaussian(stdv, pixelMean.x, pixelMean.y, x, y);
+		} while(x == pixelMean.x || y == pixelMean.y || x < 0 || y < 0 || x >= w || y >= h);
+
+		SampleData &sample = getRandomSampleAt(x, y);
+		bool flag = true;
+		for (int f = 0; f < SampleData::getSize() && flag; f++) {
+			const float lim = (f < 6) ? 30.f : 3.f;
+			if( fabs(sample[f] - pixelMean[f]) > lim*pixelStd[f] &&
+					(fabs(sample[f] - pixelMean[f]) > 0.1f || pixelStd[f] > 0.1f)) {
+				flag = false;
+			}
+		}
+
+		if (flag) {
+			//need to add a copy to neighbourhood, since it will be changed!
+			neighbourhood.push_back(sample);
+		}
 	}
+
+	if (DEBUG) {
+		printf("\n Samples in Neighbourhood: \n");
+		for (unsigned int i=0;i<neighbourhood.size();i++) {fprintf(log, "[%d,%d]",neighbourhood[i].x, neighbourhood[i].y); }
+	}
+
 	return neighbourhood;
 }
 
