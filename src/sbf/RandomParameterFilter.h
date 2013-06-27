@@ -46,13 +46,15 @@
 
 class RandomParameterFilter {
 public:
-    RandomParameterFilter(const int width, const int height, const int spp);
+    RandomParameterFilter(const int width, const int height,
+    		const int spp, const vector<SampleData> &allSamples);
 
-    void Apply(const vector<SampleData> &allSamples);
+    void Apply();
 
 private:
-    vector<SampleData> determineNeighbourhood(const int boxsize, int maxSamples,
-    			const int pixel_idx, const vector<SampleData> &allSamples);
+    vector<SampleData> determineNeighbourhood(const int boxsize, const int maxSamples, const int pixelIdx);
+
+    void getPixelMeanAndStd(int pixelIdx, SampleData &sampleMean, SampleData &sampleStd);
 
     void getGaussian(float stddev, int meanX, int meanY, int &x, int &y);
 
