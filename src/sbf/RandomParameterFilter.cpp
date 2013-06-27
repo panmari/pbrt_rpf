@@ -91,46 +91,24 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 }
 
 void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
-		SampleData &sampleMean, SampleData &sampleStd) {
+		SampleData &pixelMean, SampleData &pixelStd) {
+	SampleData pixelMeanSquare;
 	for (int sampleOffset = 0; sampleOffset < spp; sampleOffset++) {
-		SampleData &currentSample = allSamples[pixelIdx + sampleOffset];
-		//two dimensional data
-		for (int i = 0; i < 2; i++) {
-			sampleMean.imgPos[i] += currentSample.imgPos[i];
-			sampleMean.lensPos[i] += currentSample.lensPos[i];
+		const SampleData &currentSample = allSamples[pixelIdx + sampleOffset];
+		for(int f=0;f<SampleData::getSize();f++)
+		{
+			pixelMean[f] += currentSample[f];
+			pixelMeanSquare[f] += currentSample[f]*currentSample[f];
 		}
-		//three dimensional data
-		for (int i = 0; i < 3; i++) {
-			sampleMean.rgb[i] += currentSample.rgb[i];
-			sampleMean.normal[i] += currentSample.normal[i];
-			sampleMean.rho[i] += currentSample.rho[i];
-			sampleMean.secondNormal[i] += currentSample.secondNormal[i];
-			sampleMean.secondOrigin[i] += currentSample.secondOrigin[i];
-			sampleMean.thirdOrigin[i] += currentSample.thirdOrigin[i];
-			// not needed:
-			// sampleMean.inputColors += currentSample.inputColors[i];
-			// sampleMean.outputColors += currentSample.outputColors[i];
+	}
+		for(int f=0;f<SampleData::getSize();f++)
+		{
+			pixelMean[f] /= spp;
+			pixelMeanSquare[f] /= spp;
+
+			pixelStd[f] = sqrt(max(0.f,pixelMeanSquare[f] - pixelMean[f]*pixelMean[f]));	// max() avoids accidental NaNs
 		}
-		sampleMean.time += currentSample.time;
 	}
-	for (int i = 0; i < 2; i++) {
-		sampleMean.imgPos[i] /= spp;
-		sampleMean.lensPos[i] /= spp;
-	}
-	//three dimensional data
-	for (int i = 0; i < 3; i++) {
-		sampleMean.rgb[i] /= spp;
-		sampleMean.normal[i] /= spp;
-		sampleMean.rho[i] /= spp;
-		sampleMean.secondNormal[i] /= spp;
-		sampleMean.secondOrigin[i] /= spp;
-		sampleMean.thirdOrigin[i] /= spp;
-		// not needed:
-		// sampleMean.inputColors += currentSample.inputColors[i];
-		// sampleMean.outputColors += currentSample.outputColors[i];
-	}
-	sampleMean.time /= spp;
-}
 
 void RandomParameterFilter::getGaussian(float stddev, int meanX, int meanY,
 		int &x, int &y) {
