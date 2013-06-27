@@ -47,7 +47,7 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 	this->spp = spp;
 	this->rng = RNG(42);
 	this->allSamples = allSamples;
-	this->log = fopen("rpf.log", "w");
+	this->DebugLog = fopen("rpf.log", "w");
 	for (int i = 0; i < 4; i++) {
 		MAX_SAMPLES[i] = pow(BOX_SIZE[i], 2) * spp * MAX_SAMPLES_FACTOR[0];
 	}
@@ -93,6 +93,8 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		} while(x == pixelMean.x || y == pixelMean.y || x < 0 || y < 0 || x >= w || y >= h);
 
 		SampleData &sample = getRandomSampleAt(x, y);
+		if (DEBUG) { fprintf(DebugLog, "%d,%d", x, y); }
+
 		bool flag = true;
 		for (int f = 0; f < SampleData::getSize() && flag; f++) {
 			const float lim = (f < 6) ? 30.f : 3.f;
@@ -110,7 +112,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 
 	if (DEBUG) {
 		printf("\n Samples in Neighbourhood: \n");
-		for (unsigned int i=0;i<neighbourhood.size();i++) {fprintf(log, "[%d,%d]",neighbourhood[i].x, neighbourhood[i].y); }
+		for (unsigned int i=0;i<neighbourhood.size();i++) {fprintf(DebugLog, "[%d,%d]",neighbourhood[i].x, neighbourhood[i].y); }
 	}
 
 	return neighbourhood;
