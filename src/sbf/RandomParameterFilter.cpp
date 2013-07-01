@@ -71,6 +71,10 @@ void RandomParameterFilter::Apply() {
 					fprintf(debugLog, "\n");
 				}
 			}
+			vector<float> alpha = vector<float>(3);
+			vector<float> beta = vector<float>(SampleData::getFeaturesSize());
+			float W_r_c;
+			computeWeights(alpha, beta, W_r_c, neighbourhood, iterStep);
 
 		}
 	}
@@ -141,6 +145,11 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		}
 	}
 	return neighbourhood;
+}
+
+void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &beta,
+		float &W_r_c,vector<SampleData> neighbourhood,int iterStep) {
+
 }
 
 void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
