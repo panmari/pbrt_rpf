@@ -90,7 +90,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		do {
 			getGaussian(stdv, pixelMean.x, pixelMean.y, x, y);
 		} while(x == pixelMean.x || y == pixelMean.y || x < 0 || y < 0 || x >= w || y >= h);
-		SampleData &sample = getRandomSampleAt(x, y);
+		SampleData sample = getRandomSampleAt(x, y);
 		// to check if sample from right location was retrieved
 		//if (DEBUG) { fprintf(debugLog, "[%d,%d vs %d,%d]", x, y, sample.x, sample.y); }
 		printf("\n checking samle");
@@ -114,6 +114,11 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	if (DEBUG) {
 		fprintf(debugLog, "\n Samples in Neighbourhood: \n");
 		for (unsigned int i=0;i<neighbourhood.size();i++) {fprintf(debugLog, "[%d,%d]",neighbourhood[i].x, neighbourhood[i].y); }
+	}
+	for (int i = 0; i < SampleData::getFeaturesSize(); i++) {
+		for (SampleData s: neighbourhood) {
+			//TODO: normalize the stuff in the neighbourhood
+		}
 	}
 
 	return neighbourhood;
