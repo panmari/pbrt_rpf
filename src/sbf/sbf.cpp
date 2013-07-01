@@ -330,8 +330,7 @@ void SBF::Update(bool final) {
         mseFilter.ApplyMSE(mseArray, featureImg, featureVarImg, fltMseArray);
         //filter.ApplyMSE(0.04f, mseArray, rColImg, featureImg, featureVarImg, fltMseArray);
     } else { //fType == RANDOM_PARAMETER_FILTER
-    	printf("\n ** [%f,%f] ** \n", allSamples[10000].rho[1], allSamples[10000].rho[1]);
-    	RandomParameterFilter rpf(xPixelCount, yPixelCount, 8, allSamples);
+    	RandomParameterFilter rpf(xPixelCount, yPixelCount, spp, allSamples);
     	rpf.Apply();
 
     }

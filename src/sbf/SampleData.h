@@ -13,16 +13,14 @@ struct SampleData {
 	// position features (the first 6 values)
 	float secondOrigin[3];
 	float thirdOrigin[3];
-
-	int x, y;
-
-	float rgb[3];
 	//features
 	float normal[3];
 	float secondNormal[3];
 	float rho[3];
 
+	float rgb[3];
 	float imgPos[2];
+
 	//random parameters
 	float lensPos[2];
 	float time;
@@ -30,10 +28,11 @@ struct SampleData {
 	// input/output colors:
 	float inputColors[3];
 	float outputColors[3];
-
+	int x, y;
 	// Some handy accessor methods, thx @jklethinen
 	// asserts that float and int are the same length
 	static int getSize()					{ return sizeof(SampleData)/sizeof(float); }\
+	static int getFeaturesSize()			{ return 3*5; }\
 	void   operator+=(const SampleData& s)	{ for(int i=0;i<getSize();i++) (*this)[i] += s[i]; } \
 	void   divide(int s)					{ for(int i=0;i<getSize();i++) (*this)[i] /= float(s); } \
 	float& operator[](int i)				{ return ((float*)this)[i]; } \

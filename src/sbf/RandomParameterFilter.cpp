@@ -27,7 +27,7 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  */
-#define DEBUG false
+#define DEBUG true
 
 #include "RandomParameterFilter.h"
 
@@ -52,9 +52,6 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 	for (int i = 0; i < 4; i++) {
 		MAX_SAMPLES[i] = pow(BOX_SIZE[i], 2) * spp * MAX_SAMPLES_FACTOR[0];
 	}
-	//for (uint i = 0; i <= allSamples.size(); i++) {
-	//	printf("%d, %d norm: %f \n", allSamples[i].x, allSamples[i].y, allSamples[i].normal[2]);
-	//}
 }
 
 void RandomParameterFilter::Apply() {
@@ -87,23 +84,23 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 
 	SampleData pixelMean, pixelStd;
 	getPixelMeanAndStd(pixelIdx, pixelMean, pixelStd);
-	if (DEBUG) { fprintf(debugLog, "\n mean: %-.3f", pixelMean.rho[1]); }
 	for (int i = 0; i < maxSamples - spp; i++) {
 		int x, y;
 		//retry, as long as its not in picture or original pixel
 		do {
 			getGaussian(stdv, pixelMean.x, pixelMean.y, x, y);
 		} while(x == pixelMean.x || y == pixelMean.y || x < 0 || y < 0 || x >= w || y >= h);
-		// TODO: somehow all samples returned here are only filled with 0
 		SampleData &sample = getRandomSampleAt(x, y);
-		printf("\n ** [%-.3f,%-.3f] ** \n", allSamples[5000].rho[1], allSamples[5000].rho[1]);
-		if (DEBUG) { fprintf(debugLog, "[%d,%d vs %d, %d]", x, y, sample.x, sample.y); }
-
+		// to check if sample from right location was retrieved
+		//if (DEBUG) { fprintf(debugLog, "[%d,%d vs %d,%d]", x, y, sample.x, sample.y); }
+		printf("\n checking samle");
 		bool flag = true;
-		for (int f = 0; f < SampleData::getSize() && flag; f++) {
+		for (int f = 0; f < SampleData::getFeaturesSize() && flag; f++) {
+			//printf("\n %f vs %f", sample[f], pixelMean[f]);
 			const float lim = (f < 6) ? 30.f : 3.f;
 			if( fabs(sample[f] - pixelMean[f]) > lim*pixelStd[f] &&
 					(fabs(sample[f] - pixelMean[f]) > 0.1f || pixelStd[f] > 0.1f)) {
+				//printf(" rejected!");
 				flag = false;
 			}
 		}
