@@ -48,6 +48,7 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 	this->rng = RNG(42);
 	this->allSamples = allSamples;
 	this->debugLog = fopen("rpf.log", "w");
+	fprintf(debugLog, "Number of samples: %lu", allSamples.size());
 	for (int i = 0; i < 4; i++) {
 		MAX_SAMPLES[i] = pow(BOX_SIZE[i], 2) * spp * MAX_SAMPLES_FACTOR[0];
 	}
@@ -55,7 +56,6 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 
 void RandomParameterFilter::Apply() {
 	ProgressReporter reporter(4, "Applying RPF filter");
-	printf("\n ** [%d,%d] ** \n", allSamples[20].x, allSamples[20].y);
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		reporter.Update(iterStep);
 		for (int pixel_nr = 0; pixel_nr < 1; pixel_nr++) {
@@ -93,6 +93,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		} while(x == pixelMean.x || y == pixelMean.y || x < 0 || y < 0 || x >= w || y >= h);
 		// TODO: somehow all samples returned here are only filled with 0
 		SampleData &sample = getRandomSampleAt(x, y);
+		printf("\n ** [%-.3f,%-.3f] ** \n", allSamples[5000].rho, allSamples[5000].rho);
 		if (DEBUG) { fprintf(debugLog, "[%d,%d vs %d, %d]", x, y, sample.x, sample.y); }
 
 		bool flag = true;

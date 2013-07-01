@@ -275,7 +275,7 @@ void SBF::Update(bool final) {
      *  but apply filtering on the 1x1 box filtered image.
      *  We found that this gives sharper result and smoother filter selection
      */
-    rFilter.Apply(rColImg);
+    //rFilter.Apply(rColImg);
     /**
      *  Theoratically, we should use squared kernel to filter variance,
      *  however we found that it will produce undersmoothed image(this is
@@ -283,7 +283,7 @@ void SBF::Update(bool final) {
      *  estimation, so we did not consider the covariances between pixels)
      *  Therefore we reconstruct the variance with the original filter.      
      */
-    rFilter.Apply(varImg);
+    //rFilter.Apply(varImg);
 
     // We reconstruct feature buffers with 1x1 box filter as it gives us sharper result
     // In the case that the feature buffers are very noisy like heavy DOF or very fast
@@ -329,6 +329,7 @@ void SBF::Update(bool final) {
         mseFilter.ApplyMSE(mseArray, featureImg, featureVarImg, fltMseArray);
         //filter.ApplyMSE(0.04f, mseArray, rColImg, featureImg, featureVarImg, fltMseArray);
     } else { //fType == RANDOM_PARAMETER_FILTER
+    	printf("\n ** [%f,%f] ** \n", allSamples[10000].rho[1], allSamples[10000].rho[1]);
     	RandomParameterFilter rpf(xPixelCount, yPixelCount, 8, allSamples);
     	rpf.Apply();
 
