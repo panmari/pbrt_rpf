@@ -74,6 +74,7 @@ public:
 
     void SetSPP(int spp) {
     	this->spp = spp;
+    	printf("Set spp to %d", spp);
     	allSamples.resize(xPixelCount * yPixelCount * spp);
     }
 private:

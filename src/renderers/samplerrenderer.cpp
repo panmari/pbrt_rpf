@@ -200,6 +200,8 @@ void SamplerRenderer::Render(const Scene *scene) {
     Sample *sample = new Sample(sampler, surfaceIntegrator,
                                 volumeIntegrator, scene);
 
+    // ugly hack for setting spp in spf
+    camera->film->SetSPP(sampler->samplesPerPixel);
 
     // Create and launch _SamplerRendererTask_s for rendering image
 

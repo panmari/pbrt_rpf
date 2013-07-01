@@ -246,4 +246,6 @@ ImageFilm *CreateImageFilm(const ParamSet &params, Filter *filter) {
     return new ImageFilm(xres, yres, filter, crop, filename, openwin);
 }
 
-
+void ImageFilm::SetSPP(int spp) {
+	//nothing here
+}

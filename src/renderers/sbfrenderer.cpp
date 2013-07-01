@@ -184,9 +184,6 @@ void SBFRenderer::Render(const Scene *scene) {
     SBFImageFilm *sbfFilm = dynamic_cast<SBFImageFilm*>(camera->film);    
     SBFSampler *sbfSampler = dynamic_cast<SBFSampler*>(sampler);        
     
-    // ugly hack
-    sbfFilm->SetSPP(sbfSampler->samplesPerPixel);
-
     int xs, ys, xe, ye;
     camera->film->GetPixelExtent(&xs, &xe, &ys, &ye);
     float maxDepth = 0.f;

@@ -65,6 +65,7 @@ public:
     void GetPixelExtent(int *xstart, int *xend, int *ystart, int *yend) const;
     void WriteImage(float splatScale);
     void UpdateDisplay(int x0, int y0, int x1, int y1, float splatScale);
+    void SetSPP(int spp);
 private:
     // ImageFilm Private Data
     Filter *filter;

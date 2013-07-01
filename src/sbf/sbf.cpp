@@ -67,9 +67,9 @@ SBF::SBF(int xs, int ys, int w, int h,
     yPixelStart = ys;
     xPixelCount = w;
     yPixelCount = h;
+    spp = 4;
     pixelInfos = new BlockedArray<PixelInfo>(xPixelCount, yPixelCount);
-    // TODO replace 8 with spp
-    allSamples = vector<SampleData> (xPixelCount*yPixelCount*8);
+    allSamples = vector<SampleData> (spp*xPixelCount*yPixelCount);
     colImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     varImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     featureImg = TwoDArray<Feature>(xPixelCount, yPixelCount);
@@ -172,6 +172,7 @@ float SBF::CalculateAvgSpp() const {
 void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
     Update(true);
 
+    printf("\nExpected %lu samples, got %ld \n", allSamples.size(), sampleCount);
     ProgressReporter reporter(1, "Dumping images");
     string filenameBase = filename.substr(0, filename.rfind("."));
     string filenameExt  = filename.substr(filename.rfind("."));
