@@ -47,7 +47,7 @@
 class RandomParameterFilter {
 public:
     RandomParameterFilter(const int width, const int height,
-    		const int spp, const vector<SampleData> &allSamples);
+    		const int spp, const vector<SampleData> allSamples);
 
     void Apply();
 

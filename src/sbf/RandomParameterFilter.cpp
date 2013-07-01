@@ -27,7 +27,7 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  */
-#define DEBUG true
+#define DEBUG false
 
 #include "RandomParameterFilter.h"
 
@@ -41,7 +41,7 @@ const vector<SampleData> allSamples;
 int MAX_SAMPLES[4];
 
 RandomParameterFilter::RandomParameterFilter(const int width, const int height,
-		const int spp, const vector<SampleData> &allSamples) {
+		const int spp, const vector<SampleData> allSamples) {
 	this->w = width;
 	this->h = height;
 	this->spp = spp;
@@ -52,6 +52,9 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 	for (int i = 0; i < 4; i++) {
 		MAX_SAMPLES[i] = pow(BOX_SIZE[i], 2) * spp * MAX_SAMPLES_FACTOR[0];
 	}
+	//for (uint i = 0; i <= allSamples.size(); i++) {
+	//	printf("%d, %d norm: %f \n", allSamples[i].x, allSamples[i].y, allSamples[i].normal[2]);
+	//}
 }
 
 void RandomParameterFilter::Apply() {
@@ -84,7 +87,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 
 	SampleData pixelMean, pixelStd;
 	getPixelMeanAndStd(pixelIdx, pixelMean, pixelStd);
-
+	if (DEBUG) { fprintf(debugLog, "\n mean: %-.3f", pixelMean.rho[1]); }
 	for (int i = 0; i < maxSamples - spp; i++) {
 		int x, y;
 		//retry, as long as its not in picture or original pixel
@@ -93,7 +96,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		} while(x == pixelMean.x || y == pixelMean.y || x < 0 || y < 0 || x >= w || y >= h);
 		// TODO: somehow all samples returned here are only filled with 0
 		SampleData &sample = getRandomSampleAt(x, y);
-		printf("\n ** [%-.3f,%-.3f] ** \n", allSamples[5000].rho, allSamples[5000].rho);
+		printf("\n ** [%-.3f,%-.3f] ** \n", allSamples[5000].rho[1], allSamples[5000].rho[1]);
 		if (DEBUG) { fprintf(debugLog, "[%d,%d vs %d, %d]", x, y, sample.x, sample.y); }
 
 		bool flag = true;
