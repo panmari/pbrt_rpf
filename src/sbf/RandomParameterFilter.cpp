@@ -63,6 +63,14 @@ void RandomParameterFilter::Apply() {
 			const int pixel_idx = pixel_nr * spp;
 			vector<SampleData> neighbourhood = determineNeighbourhood(
 					BOX_SIZE[iterStep], MAX_SAMPLES[iterStep], pixel_idx);
+			if (DEBUG) {
+				fprintf(debugLog, "Neighbourhood: \n");
+				for (SampleData& s: neighbourhood) {
+					//verified with matlab, has mean 0 and std 1
+					for (int f=0; f < SampleData::getFeaturesSize(); f++) {fprintf(debugLog, "%-.3f ", s[f]); }
+					fprintf(debugLog, "\n");
+				}
+			}
 
 		}
 	}
@@ -93,7 +101,6 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		SampleData sample = getRandomSampleAt(x, y);
 		// to check if sample from right location was retrieved
 		//if (DEBUG) { fprintf(debugLog, "[%d,%d vs %d,%d]", x, y, sample.x, sample.y); }
-		printf("\n checking samle");
 		bool flag = true;
 		for (int f = 0; f < SampleData::getFeaturesSize() && flag; f++) {
 			//printf("\n %f vs %f", sample[f], pixelMean[f]);
@@ -115,12 +122,24 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		fprintf(debugLog, "\n Samples in Neighbourhood: \n");
 		for (unsigned int i=0;i<neighbourhood.size();i++) {fprintf(debugLog, "[%d,%d]",neighbourhood[i].x, neighbourhood[i].y); }
 	}
-	for (int i = 0; i < SampleData::getFeaturesSize(); i++) {
-		for (SampleData s: neighbourhood) {
-			//TODO: normalize the stuff in the neighbourhood
+
+	// Normalization of neighbourhood
+	SampleData nMean, nMeanSquare, nStd;
+	for (int f = 0; f < SampleData::getFeaturesSize(); f++) {
+		for (SampleData& s: neighbourhood) {
+			nMean[f] += s[f];
+			nMeanSquare[f] += s[f]*s[f];
+		}
+		nMean[f] /= neighbourhood.size();
+		nMeanSquare[f] /= neighbourhood.size();
+		nStd[f] = sqrt(max(0.f,nMeanSquare[f] - nMean[f]*nMean[f]));
+	}
+	for (SampleData& s: neighbourhood) {
+		//TODO: don't normalize everything, just stuff that will be used later on
+		for (int f = 0; f < SampleData::getFeaturesSize(); f++) {
+			s[f] = (s[f] - nMean[f])/nStd[f];
 		}
 	}
-
 	return neighbourhood;
 }
 

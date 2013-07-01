@@ -24,7 +24,7 @@ DEFS=-DPBRT_HAS_OPENEXR
 MARCH=-m64
 
 # change this to -g3 for debug builds
-OPT=-Ofast -fopenmp
+OPT=-Ofast -fopenmp -std=c++0x
 # comment out this line to enable assertions at runtime
 DEFS += -DNDEBUG
 
