@@ -57,21 +57,21 @@ void RandomParameterFilter::Apply() {
 	ProgressReporter reporter(4, "Applying RPF filter");
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		reporter.Update(iterStep);
-		for (int pixel_nr = 0; pixel_nr < 1; pixel_nr++) {
+		for (int pixel_nr = 0; pixel_nr < 1; pixel_nr++) { //do only one pixel
 		//for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
 			const int pixel_idx = pixel_nr * spp;
 			vector<SampleData> neighbourhood = determineNeighbourhood(
 					BOX_SIZE[iterStep], MAX_SAMPLES[iterStep], pixel_idx);
 			if (DEBUG) {
-				fprintf(debugLog, "Neighbourhood: \n");
+				fprintf(debugLog, "\nNormalized feature vectors in neighbourhood: \n");
 				for (SampleData& s: neighbourhood) {
 					//verified with matlab, has mean 0 and std 1
-					for (int f=0; f < SampleData::getFeaturesEnd(); f++) {fprintf(debugLog, "%-.3f ", s[f]); }
+					for (int f=SampleData::getFeaturesStart(); f < SampleData::getFeaturesEnd(); f++) {fprintf(debugLog, "%-.3f ", s[f]); }
 					fprintf(debugLog, "\n");
 				}
 			}
 			vector<float> alpha = vector<float>(3);
-			vector<float> beta = vector<float>(SampleData::getFeaturesEnd());
+			vector<float> beta = vector<float>(SampleData::getFeaturesEnd() - SampleData::getFeaturesStart());
 			float W_r_c;
 			computeWeights(alpha, beta, W_r_c, neighbourhood, iterStep);
 
@@ -110,8 +110,8 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 			const float lim = (f < 6) ? 30.f : 3.f;
 			if( fabs(sample[f] - pixelMean[f]) > lim*pixelStd[f] &&
 					(fabs(sample[f] - pixelMean[f]) > 0.1f || pixelStd[f] > 0.1f)) {
-				//printf(" rejected!");
 				flag = false;
+				//printf(" rejected!");
 			}
 		}
 
@@ -122,7 +122,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	}
 
 	if (DEBUG) {
-		fprintf(debugLog, "\n Samples in Neighbourhood: \n");
+		fprintf(debugLog, "\nSamples in Neighbourhood: \n");
 		for (unsigned int i=0;i<neighbourhood.size();i++) {fprintf(debugLog, "[%d,%d]",neighbourhood[i].x, neighbourhood[i].y); }
 	}
 
