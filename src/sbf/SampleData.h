@@ -32,14 +32,14 @@ struct SampleData {
 	// Some handy accessor methods, thx @jklethinen
 	// asserts that float and int are the same length
 	static int getSize()					{ return sizeof(SampleData)/sizeof(float); }
-	static int getFeaturesStart() 			{ return 0; }
-	static int getFeaturesEnd()				{ return 15; }
-	static int getColorStart()				{ return 15; }
-	static int getColorEnd()				{ return 18; }
-	static int getImgPosStart()				{ return 18; }
-	static int getImgPosEnd()				{ return 20; }
-	static int getRandomParametersStart()	{ return 20; }
-	static int getRandomParametersEnd()		{ return 22; }
+	static int getFeaturesOffset() 			{ return 0; }
+	static int getFeaturesSize()			{ return 15; }
+	static int getColorOffset()				{ return 15; }
+	static int getColorSize()				{ return 3; }
+	static int getImgPosOffset()			{ return 18; }
+	static int getImgPosSize()				{ return 2; }
+	static int getRandomParamsOffset()		{ return 20; }
+	static int getRandomParametersSize()	{ return 2; }
 	void   operator+=(const SampleData& s)	{ for(int i=0;i<getSize();i++) (*this)[i] += s[i]; }
 	void   divide(int s)					{ for(int i=0;i<getSize();i++) (*this)[i] /= float(s); }
 	float& operator[](int i)				{ return ((float*)this)[i]; }
