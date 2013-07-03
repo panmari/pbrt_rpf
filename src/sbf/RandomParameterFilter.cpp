@@ -151,18 +151,42 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 
 	// dependency for colors
 
-	float m_D_rk_c[3];
-	float m_D_pk_c[3];
-	float m_D_fk_c[3];
-	for (int i = 0; i < 3; i++) {
-		m_D_rk_c[i] = 0;
-		m_D_pk_c[i] = 0;
-		m_D_fk_c[i] = 0;
-	}
+	vector<float> m_D_rk_c = vector<float>(SampleData::getRandomParametersEnd() - SampleData::getRandomParametersStart());
+	vector<float> m_D_pk_c = vector<float>(SampleData::getImgPosEnd() - SampleData::getImgPosStart());
+	vector<float> m_D_fk_c = vector<float>(SampleData::getFeaturesEnd() - SampleData::getFeaturesEnd());
+	std::fill(m_D_rk_c.begin(), m_D_rk_c.end(), 0.f );
+	std::fill(m_D_pk_c.begin(), m_D_pk_c.end(), 0.f );
+	std::fill(m_D_fk_c.begin(), m_D_fk_c.end(), 0.f );
 
 	for(int l = SampleData::getColorStart(); l < SampleData::getColorEnd(); l++) {
 		for(int k=SampleData::getRandomParametersStart(); k < SampleData::getRandomParametersEnd(); k++) {
 			m_D_rk_c[k] += MutualInformation::mutualinfo(neighbourhood, l, k);
+		}
+		for(int k=SampleData::getImgPosStart(); k < SampleData::getImgPosEnd(); k++) {
+			m_D_pk_c[k] += MutualInformation::mutualinfo(neighbourhood, l, k);
+		}
+		for(int k=SampleData::getFeaturesStart(); k < SampleData::getFeaturesEnd(); k++) {
+			m_D_fk_c[k] += MutualInformation::mutualinfo(neighbourhood, l, k);
+		}
+	}
+
+	// dependency for scene features
+	vector<vector<float>> m_D_fk_rl = vector<vector<float>>(SampleData::getFeaturesEnd() - SampleData::getFeaturesEnd());
+	vector<vector<float>> m_D_fk_pl = vector<vector<float>>(SampleData::getFeaturesEnd() - SampleData::getFeaturesEnd());
+	vector<vector<float>> m_D_fk_cl = vector<vector<float>>(SampleData::getFeaturesEnd() - SampleData::getFeaturesEnd());
+	std::fill(m_D_fk_rl.begin(), m_D_fk_rl.end(), vector<float>(m_D_rk_c.size()));
+	std::fill(m_D_fk_pl.begin(), m_D_fk_pl.end(), vector<float>(m_D_pk_c.size()));
+	std::fill(m_D_fk_cl.begin(), m_D_fk_cl.end(), vector<float>(3)); //three color channels
+
+	for(int k = SampleData::getFeaturesStart(); k < SampleData::getFeaturesEnd(); k++) {
+		for(int l=SampleData::getRandomParametersStart(); l < SampleData::getRandomParametersEnd(); l++) {
+			m_D_fk_rl[k][l] = MutualInformation::mutualinfo(neighbourhood, l, k);
+		}
+		for(int l=SampleData::getImgPosStart(); l < SampleData::getImgPosEnd(); l++) {
+			m_D_fk_pl[k][l] = MutualInformation::mutualinfo(neighbourhood, l, k);
+		}
+		for(int l=SampleData::getColorStart(); l < SampleData::getColorEnd(); l++) {
+			m_D_fk_cl[k][l] = m_D_fk_c[k]/3; // average of color channels
 		}
 	}
 }
