@@ -159,10 +159,9 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 		m_D_pk_c[i] = 0;
 		m_D_fk_c[i] = 0;
 	}
-	//todo implement getColorStart()
+
 	for(int l = SampleData::getColorStart(); l < SampleData::getColorEnd(); l++) {
 		for(int k=SampleData::getRandomParametersStart(); k < SampleData::getRandomParametersEnd(); k++) {
-			//compute mi somehow (accessor for this stuff?)
 			m_D_rk_c[k] += MutualInformation::mutualinfo(neighbourhood, l, k);
 		}
 	}

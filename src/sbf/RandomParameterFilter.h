@@ -67,24 +67,50 @@ private:
 };
 
 /**
- * TODO: Jklethinen did this as a real object, which is probably better....
+ * Again heavily inspired by jklethinens code.
+ * Jklethinen did this as a real object, which is probably better....
  */
 #define NR_BUCKETS 5
 class MutualInformation {
 public:
 	static float mutualinfo(vector<SampleData> &neighbourhood, int firstChannel, int secondChannel) {
+		//fill histograms
+		//these are actually only ints, but declaring them here as floats saves us a conversion later on
+		float hist_a[NR_BUCKETS];
+		float hist_b[NR_BUCKETS];
+		float hist_ab[NR_BUCKETS*NR_BUCKETS];
+		for (int i = 0; i < NR_BUCKETS; i++) {
+			hist_a[i] = hist_b[i] = 0;
+		}
+		for (int i = 0; i < NR_BUCKETS*NR_BUCKETS; i++) {
+			hist_a[i] = hist_b[i] = 0;
+		}
 		for (SampleData& s: neighbourhood) {
-			int hist_a[NR_BUCKETS];
-			int hist_b[NR_BUCKETS];
-			for (int i = 0; i < NR_BUCKETS; i++) {
-				hist_a[i] = hist_b[i] = 0;
-			}
 			int a = quantize(s[firstChannel]);
 			int b = quantize(s[secondChannel]);
 			hist_a[a]++;
 			hist_b[b]++;
+			hist_ab[a*NR_BUCKETS+b]++;
 		}
-		return 0.f;
+		//compute entropies
+		float ent_a = 0.f;
+		float ent_b = 0.f;
+		for (int i = 0; i < NR_BUCKETS; i++) {
+			if(hist_a[i]) {
+				float prob_a = hist_a[i]/neighbourhood.size();
+				ent_a += -prob_a*log2f(prob_a);
+			}
+			if(hist_b[i]) {
+				float prob_b = hist_b[i]/neighbourhood.size();
+				ent_b += -prob_b*log2f(prob_b);
+			}
+		}
+		float ent_ab = 0.f;
+		for (int i = 0; i < NR_BUCKETS*NR_BUCKETS; i++) {
+			float prob_ab = hist_ab[i]/neighbourhood.size();
+			ent_ab += -prob_ab*log2f(prob_ab);
+		}
+		return ent_a + ent_b - ent_ab;
 	}
 
 private:
