@@ -66,13 +66,13 @@ void RandomParameterFilter::Apply() {
 				fprintf(debugLog, "\nNormalized feature vectors in neighbourhood: \n");
 				for (SampleData& s: neighbourhood) {
 					//verified with matlab, has mean 0 and std 1
-					for (int f=SampleData::getFeaturesOffset(); f < SampleData::getFeaturesEnd(); f++) {fprintf(debugLog, "%-.3f ", s[f]); }
+					for (int f=SampleData::getFeaturesOffset(); f < SampleData::getFeaturesSize(); f++) {fprintf(debugLog, "%-.3f ", s[f]); }
 					fprintf(debugLog, "\n");
 				}
 				fflush(debugLog);
 			}
 			vector<float> alpha = vector<float>(3);
-			vector<float> beta = vector<float>(SampleData::getFeaturesEnd() - SampleData::getFeaturesOffset());
+			vector<float> beta = vector<float>(SampleData::getFeaturesSize());
 			float W_r_c;
 			computeWeights(alpha, beta, W_r_c, neighbourhood, iterStep);
 
@@ -106,7 +106,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		// to check if sample from right location was retrieved
 		//if (DEBUG) { fprintf(debugLog, "[%d,%d vs %d,%d]", x, y, sample.x, sample.y); }
 		bool flag = true;
-		for (int f = 0; f < SampleData::getFeaturesEnd() && flag; f++) {
+		for (int f = SampleData::getFeaturesOffset(); f < SampleData::getFeaturesSize() && flag; f++) {
 			//printf("\n %f vs %f", sample[f], pixelMean[f]);
 			const float lim = (f < 6) ? 30.f : 3.f;
 			if( fabs(sample[f] - pixelMean[f]) > lim*pixelStd[f] &&
@@ -129,7 +129,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 
 	// Normalization of neighbourhood
 	SampleData nMean, nMeanSquare, nStd;
-	for (int f = 0; f < SampleData::getFeaturesEnd(); f++) {
+	for (int f = SampleData::getFeaturesOffset(); f < SampleData::getFeaturesSize(); f++) {
 		for (SampleData& s: neighbourhood) {
 			nMean[f] += s[f];
 			nMeanSquare[f] += s[f]*s[f];
@@ -140,7 +140,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	}
 	for (SampleData& s: neighbourhood) {
 		//TODO: don't normalize everything, just stuff that will be used later on
-		for (int f = 0; f < SampleData::getFeaturesEnd(); f++) {
+		for (int f = SampleData::getFeaturesOffset(); f < SampleData::getFeaturesSize(); f++) {
 			s[f] = (s[f] - nMean[f])/max(1e-10f, nStd[f]);
 		}
 	}

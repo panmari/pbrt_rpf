@@ -9,7 +9,7 @@ Film "sbfimage"
     "string filter"          ["rpf"] # rpf-> Random Parameter Filter
 
 Sampler "random"     
-    "integer initsamples" [8] 
+    "integer pixelsamples" [8] 
 
 Renderer "samplerrenderer"
 # See sbf.cpp for the usage of built-in filters

@@ -83,7 +83,7 @@ public:
 			hist_a[i] = hist_b[i] = 0;
 		}
 		for (int i = 0; i < NR_BUCKETS*NR_BUCKETS; i++) {
-			hist_a[i] = hist_b[i] = 0;
+			hist_ab[i] = 0;
 		}
 		for (SampleData& s: neighbourhood) {
 			int a = quantize(s[firstChannel]);
