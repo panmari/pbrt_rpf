@@ -61,8 +61,10 @@ void RandomParameterFilter::Apply() {
 		for (int pixel_nr = 0; pixel_nr < 1; pixel_nr++) { //do only one pixel
 		//for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
 			const int pixel_idx = pixel_nr * spp;
+			vector<int> neighbourhoodIdxs;
 			vector<SampleData> neighbourhood = determineNeighbourhood(
-					BOX_SIZE[iterStep], MAX_SAMPLES[iterStep], pixel_idx);
+					BOX_SIZE[iterStep], MAX_SAMPLES[iterStep], pixel_idx, neighbourhoodIdxs);
+
 			if (DEBUG) {
 				fprintf(debugLog, "\nNormalized feature vectors in neighbourhood: \n");
 				for (SampleData& s: neighbourhood) {
@@ -85,7 +87,7 @@ void RandomParameterFilter::Apply() {
 				for(uint i=0; i<beta.size(); i++) { fprintf(debugLog, "%-.3f, ", beta[i]); }
 				fflush(debugLog);
 			}
-
+			filterColorSamples(alpha, beta, W_r_c, neighbourhood, neighbourhoodIdxs);
 		}
 	}
 
@@ -93,7 +95,7 @@ void RandomParameterFilter::Apply() {
 }
 
 vector<SampleData> RandomParameterFilter::determineNeighbourhood(
-		const int boxsize, const int maxSamples, const int pixelIdx) {
+		const int boxsize, const int maxSamples, const int pixelIdx, vector<int> &neighbourhoodIdxs) {
 	vector<SampleData> neighbourhood;
 	neighbourhood.reserve(maxSamples);
 	// add all samples of current pixel
@@ -107,12 +109,12 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	SampleData pixelMean, pixelStd;
 	getPixelMeanAndStd(pixelIdx, pixelMean, pixelStd);
 	for (int i = 0; i < maxSamples - spp; i++) {
-		int x, y;
+		int x, y, idx;
 		//retry, as long as its not in picture or original pixel
 		do {
 			getGaussian(stdv, pixelMean.x, pixelMean.y, x, y);
 		} while(x == pixelMean.x || y == pixelMean.y || x < 0 || y < 0 || x >= w || y >= h);
-		SampleData sample = getRandomSampleAt(x, y);
+		SampleData &sample = getRandomSampleAt(x, y, idx);
 		// to check if sample from right location was retrieved
 		//if (DEBUG) { fprintf(debugLog, "[%d,%d vs %d,%d]", x, y, sample.x, sample.y); }
 		bool flag = true;
@@ -127,8 +129,9 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		}
 
 		if (flag) {
-			//need to add a copy to neighbourhood, since it will be changed!
+			//by standard, this pushes a copy there
 			neighbourhood.push_back(sample);
+			neighbourhoodIdxs.push_back(idx);
 		}
 	}
 
@@ -139,7 +142,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 
 	// Normalization of neighbourhood
 	SampleData nMean, nMeanSquare, nStd;
-	for (int f = SampleData::getFeaturesOffset(); f < SampleData::getFeaturesSize(); f++) {
+	for (int f = 0; f < SampleData::getLastNormalizedOffset(); f++) {
 		for (SampleData& s: neighbourhood) {
 			nMean[f] += s[f];
 			nMeanSquare[f] += s[f]*s[f];
@@ -149,8 +152,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		nStd[f] = sqrt(max(0.f,nMeanSquare[f] - nMean[f]*nMean[f]));
 	}
 	for (SampleData& s: neighbourhood) {
-		//TODO: don't normalize everything, just stuff that will be used later on
-		for (int f = SampleData::getFeaturesOffset(); f < SampleData::getFeaturesSize(); f++) {
+		for (int f = 0; f < SampleData::getLastNormalizedOffset(); f++) {
 			//todo: could optimize this to not divide if std is 0
 			s[f] = (s[f] - nMean[f])/(EPSILON + nStd[f]);
 		}
@@ -228,6 +230,16 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 	}
 }
 
+void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<float> &beta, float W_r_c,
+		vector<SampleData> &neighbourhood, vector<int> &neighbourhoodIdxs) {
+	const float var_8 = 0.002;
+	const float var = 8*var_8/spp;
+
+	const float scale_f = -sqrt(1 - W_r_c) / (2*var);
+	const float scale_c = scale_f;
+}
+
+
 void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
 		SampleData &pixelMean, SampleData &pixelStd) {
 	SampleData pixelMeanSquare;
@@ -262,6 +274,7 @@ void RandomParameterFilter::getGaussian(float stddev, int meanX, int meanY,
 	y = sqrt(-2 * log(S) / S) * V2 * stddev + meanY;
 }
 
-SampleData& RandomParameterFilter::getRandomSampleAt(int x, int y) {
-	return allSamples[(x + y*w)*spp + (int)(spp*rng.RandomFloat())];
+SampleData& RandomParameterFilter::getRandomSampleAt(int x, int y, int &idx) {
+	idx = (x + y*w)*spp + (int)(spp*rng.RandomFloat());
+	return allSamples[idx];
 }
