@@ -98,12 +98,14 @@ SBF::SBF(int xs, int ys, int w, int h,
 
 void SBF::AddSample(const CameraSample &sample, const Spectrum &L, 
                     const Intersection &isect) {    
-    int x = Floor2Int(sample.imageX)-xPixelStart;
-    int y = Floor2Int(sample.imageY)-yPixelStart;
+    int x = sample.x-xPixelStart;
+    int y = sample.y-yPixelStart;
     // Check if the sample is in the image
-    if (x < 0 || y < 0 || x >= xPixelCount || y >= yPixelCount) 
+    if (x < 0 || y < 0 || x >= xPixelCount || y >= yPixelCount)  {
+    	//TODO: one sample too few here?
+    	//printf("Sorted out a sample at %d, %d", x, y);
         return;    
-
+    }
     // Convert to 3d color space from Spectrum
     float xyz[3];
     L.ToRGB(xyz);

@@ -105,6 +105,8 @@ int RandomSampler::GetMoreSamples(Sample *sample, RNG &rng) {
     for (uint32_t i = 0; i < sample->n2D.size(); ++i)
         for (uint32_t j = 0; j < 2*sample->n2D[i]; ++j)
             sample->twoD[i][j] = rng.RandomFloat();
+    sample->x = xPos;
+    sample->y = yPos;
     ++samplePos;
     return 1;
 }
