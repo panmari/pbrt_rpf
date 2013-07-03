@@ -80,10 +80,10 @@ public:
 		float hist_b[NR_BUCKETS];
 		float hist_ab[NR_BUCKETS*NR_BUCKETS];
 		for (int i = 0; i < NR_BUCKETS; i++) {
-			hist_a[i] = hist_b[i] = 0;
+			hist_a[i] = hist_b[i] = 0.f;
 		}
 		for (int i = 0; i < NR_BUCKETS*NR_BUCKETS; i++) {
-			hist_ab[i] = 0;
+			hist_ab[i] = 0.f;
 		}
 		for (SampleData& s: neighbourhood) {
 			int a = quantize(s[firstChannel]);
@@ -107,8 +107,10 @@ public:
 		}
 		float ent_ab = 0.f;
 		for (int i = 0; i < NR_BUCKETS*NR_BUCKETS; i++) {
-			float prob_ab = hist_ab[i]/neighbourhood.size();
-			ent_ab += -prob_ab*log2f(prob_ab);
+			if(hist_ab[i]) {
+				float prob_ab = hist_ab[i]/neighbourhood.size();
+				ent_ab += -prob_ab*log2f(prob_ab);
+			}
 		}
 		return ent_a + ent_b - ent_ab;
 	}
