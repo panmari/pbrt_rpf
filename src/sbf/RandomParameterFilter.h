@@ -47,26 +47,23 @@
 class RandomParameterFilter {
 public:
     RandomParameterFilter(const int width, const int height,
-    		const int spp, const vector<SampleData> allSamples);
+    		const int spp, vector<SampleData> &allSamples);
 
     void Apply();
 
 private:
-    vector<SampleData> determineNeighbourhood(const int boxsize, const int maxSamples, const int pixelIdx);
-    void computeWeights(vector<float> &alpha, vector<float> &beta, float &W_r_c,vector<SampleData> neighbourhood,int iterStep);
-
-    void getPixelMeanAndStd(int pixelIdx, SampleData &sampleMean, SampleData &sampleStd);
-
-    void getGaussian(float stddev, int meanX, int meanY, int &x, int &y);
-
-    SampleData& getRandomSampleAt(int x, int y) {
-    	return allSamples[(x + y*w)*spp + (int)(spp*rng.RandomFloat())];
-    }
-
     int h, w, spp;
-    FILE *debugLog;
-    vector<SampleData> allSamples;
-    RNG rng; //random generator
+	FILE *debugLog;
+	vector<SampleData> &allSamples;
+	RNG rng; //random generator
+
+    vector<SampleData> determineNeighbourhood(const int boxsize, const int maxSamples, const int pixelIdx);
+    void computeWeights(vector<float> &alpha, vector<float> &beta, float &W_r_c, vector<SampleData> &neighbourhood,int iterStep);
+
+    //some helpers
+    void getPixelMeanAndStd(int pixelIdx, SampleData &sampleMean, SampleData &sampleStd);
+    void getGaussian(float stddev, int meanX, int meanY, int &x, int &y);
+    SampleData& getRandomSampleAt(int x, int y);
 };
 
 #endif

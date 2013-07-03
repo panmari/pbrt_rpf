@@ -37,16 +37,15 @@
 
 const int BOX_SIZE[] = { 55, 35, 17, 7 };
 const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f };
-const vector<SampleData> allSamples;
 int MAX_SAMPLES[4];
 
 RandomParameterFilter::RandomParameterFilter(const int width, const int height,
-		const int spp, const vector<SampleData> allSamples) {
+		const int spp, vector<SampleData> &allSamples) :
+	allSamples(allSamples) {
 	this->w = width;
 	this->h = height;
 	this->spp = spp;
 	this->rng = RNG(42);
-	this->allSamples = allSamples;
 	this->debugLog = fopen("rpf.log", "w");
 	fprintf(debugLog, "Number of samples: %lu", allSamples.size());
 	for (int i = 0; i < 4; i++) {
@@ -67,12 +66,12 @@ void RandomParameterFilter::Apply() {
 				fprintf(debugLog, "Neighbourhood: \n");
 				for (SampleData& s: neighbourhood) {
 					//verified with matlab, has mean 0 and std 1
-					for (int f=0; f < SampleData::getFeaturesSize(); f++) {fprintf(debugLog, "%-.3f ", s[f]); }
+					for (int f=0; f < SampleData::getFeaturesEnd(); f++) {fprintf(debugLog, "%-.3f ", s[f]); }
 					fprintf(debugLog, "\n");
 				}
 			}
 			vector<float> alpha = vector<float>(3);
-			vector<float> beta = vector<float>(SampleData::getFeaturesSize());
+			vector<float> beta = vector<float>(SampleData::getFeaturesEnd());
 			float W_r_c;
 			computeWeights(alpha, beta, W_r_c, neighbourhood, iterStep);
 
@@ -106,7 +105,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		// to check if sample from right location was retrieved
 		//if (DEBUG) { fprintf(debugLog, "[%d,%d vs %d,%d]", x, y, sample.x, sample.y); }
 		bool flag = true;
-		for (int f = 0; f < SampleData::getFeaturesSize() && flag; f++) {
+		for (int f = 0; f < SampleData::getFeaturesEnd() && flag; f++) {
 			//printf("\n %f vs %f", sample[f], pixelMean[f]);
 			const float lim = (f < 6) ? 30.f : 3.f;
 			if( fabs(sample[f] - pixelMean[f]) > lim*pixelStd[f] &&
@@ -129,7 +128,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 
 	// Normalization of neighbourhood
 	SampleData nMean, nMeanSquare, nStd;
-	for (int f = 0; f < SampleData::getFeaturesSize(); f++) {
+	for (int f = 0; f < SampleData::getFeaturesEnd(); f++) {
 		for (SampleData& s: neighbourhood) {
 			nMean[f] += s[f];
 			nMeanSquare[f] += s[f]*s[f];
@@ -140,16 +139,32 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	}
 	for (SampleData& s: neighbourhood) {
 		//TODO: don't normalize everything, just stuff that will be used later on
-		for (int f = 0; f < SampleData::getFeaturesSize(); f++) {
-			s[f] = (s[f] - nMean[f])/nStd[f];
+		for (int f = 0; f < SampleData::getFeaturesEnd(); f++) {
+			s[f] = (s[f] - nMean[f])/max(1e-10f, nStd[f]);
 		}
 	}
 	return neighbourhood;
 }
 
 void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &beta,
-		float &W_r_c,vector<SampleData> neighbourhood,int iterStep) {
+		float &W_r_c, vector<SampleData> &neighbourhood,int iterStep) {
 
+	// dependency for colors
+
+	float m_D_rk_c[3];
+	float m_D_pk_c[3];
+	float m_D_fk_c[3];
+	for (int i = 0; i < 3; i++) {
+		m_D_rk_c[i] = 0;
+		m_D_pk_c[i] = 0;
+		m_D_fk_c[i] = 0;
+	}
+	for(int l = 0; l < alpha.size(); l++) {
+		for(int k=SampleData::getRandomParametersStart(); k < SampleData::getRandomParametersEnd(); k++) {
+			//compute mi somehow (accessor for this stuff?)
+			//m_D_rk_c[k] += mutualinfo()
+		}
+	}
 }
 
 void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
@@ -184,4 +199,8 @@ void RandomParameterFilter::getGaussian(float stddev, int meanX, int meanY,
 
 	x = sqrt(-2 * log(S) / S) * V1 * stddev + meanX;
 	y = sqrt(-2 * log(S) / S) * V2 * stddev + meanY;
+}
+
+SampleData& RandomParameterFilter::getRandomSampleAt(int x, int y) {
+	return allSamples[(x + y*w)*spp + (int)(spp*rng.RandomFloat())];
 }
