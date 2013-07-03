@@ -28,13 +28,14 @@
 
  */
 #define DEBUG true
+#define EPSILON 1e-10
 
 #include "RandomParameterFilter.h"
 
 #include "fmath.hpp"
 #include "parallel.h"
 #include "progressreporter.h"
-
+#include<boost/range/numeric.hpp>
 const int BOX_SIZE[] = { 55, 35, 17, 7 };
 const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f };
 int MAX_SAMPLES[4];
@@ -71,10 +72,19 @@ void RandomParameterFilter::Apply() {
 				}
 				fflush(debugLog);
 			}
-			vector<float> alpha = vector<float>(3);
+
+			vector<float> alpha = vector<float>(SampleData::getColorSize());
 			vector<float> beta = vector<float>(SampleData::getFeaturesSize());
 			float W_r_c;
 			computeWeights(alpha, beta, W_r_c, neighbourhood, iterStep);
+
+			if (DEBUG) {
+				fprintf(debugLog, "\nalpha: ");
+				for(uint i=0; i<alpha.size(); i++) { fprintf(debugLog, "%-.3f, ", alpha[i]); }
+				fprintf(debugLog, "\nbeta: ");
+				for(uint i=0; i<beta.size(); i++) { fprintf(debugLog, "%-.3f, ", beta[i]); }
+				fflush(debugLog);
+			}
 
 		}
 	}
@@ -141,7 +151,8 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	for (SampleData& s: neighbourhood) {
 		//TODO: don't normalize everything, just stuff that will be used later on
 		for (int f = SampleData::getFeaturesOffset(); f < SampleData::getFeaturesSize(); f++) {
-			s[f] = (s[f] - nMean[f])/max(1e-10f, nStd[f]);
+			//todo: could optimize this to not divide if std is 0
+			s[f] = (s[f] - nMean[f])/(EPSILON + nStd[f]);
 		}
 	}
 	return neighbourhood;
@@ -194,6 +205,26 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 		for(int l=0; l < SampleData::getColorSize(); l++) {
 			m_D_fk_cl[k][l] = m_D_fk_c[k]/3; // average of color channels
 		}
+	}
+	const float D_r_c = boost::accumulate(m_D_rk_c, 0.f);
+	const float D_p_c = boost::accumulate(m_D_pk_c, 0.f);
+	const float D_f_c = boost::accumulate(m_D_fk_c, 0.f);
+	const float D_a_c = D_r_c + D_p_c + D_f_c;
+
+	W_r_c = D_r_c /(D_r_c + D_p_c + EPSILON);
+
+	// set alpha for every channel to the same value
+	std::fill(alpha.begin(), alpha.end(), max(1 - (1 + 0.1f*iterStep)*W_r_c, 0.f));
+
+	for(int k=0;k<SampleData::getFeaturesSize();k++) {
+		const float D_fk_r = boost::accumulate(m_D_fk_rl[k], 0.f);
+		const float D_fk_p = boost::accumulate(m_D_fk_pl[k], 0.f);
+		const float D_fk_c = boost::accumulate(m_D_fk_cl[k], 0.f);
+
+		const float W_fk_r = D_fk_r / (D_fk_r + D_fk_p + EPSILON);
+		const float W_fk_c = D_fk_c / (D_a_c + EPSILON);
+
+		beta[k] = W_fk_c * max(1-(1+0.1f*iterStep)*W_fk_r, 0.f);
 	}
 }
 

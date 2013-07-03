@@ -243,7 +243,7 @@ void SBF::Update(bool final) {
     std::sort(allSamples.begin(), allSamples.end(), SBF::comparator);
     ProgressReporter reporter(1, "Putting together debug images");
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
-    for(int i = 0; i < allSamples.size(); i++) {
+    for(uint i = 0; i < allSamples.size(); i++) {
 		SampleData sd = allSamples[i];
 
 		int x = Floor2Int(sd.imgPos[0])-xPixelStart;
