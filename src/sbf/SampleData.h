@@ -34,9 +34,12 @@ struct SampleData {
 	static int getSize()					{ return sizeof(SampleData)/sizeof(float); }
 	static int getFeaturesStart() 			{ return 0; }
 	static int getFeaturesEnd()				{ return 15; }
+	static int getColorStart()				{ return 15; }
+	static int getColorEnd()				{ return 18; }
+	static int getImgPosStart()				{ return 18; }
+	static int getImgPosEnd()				{ return 20; }
 	static int getRandomParametersStart()	{ return 20; }
 	static int getRandomParametersEnd()		{ return 22; }
-	//color can be accessed through .rgb
 	void   operator+=(const SampleData& s)	{ for(int i=0;i<getSize();i++) (*this)[i] += s[i]; }
 	void   divide(int s)					{ for(int i=0;i<getSize();i++) (*this)[i] /= float(s); }
 	float& operator[](int i)				{ return ((float*)this)[i]; }

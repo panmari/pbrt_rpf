@@ -66,4 +66,34 @@ private:
     SampleData& getRandomSampleAt(int x, int y);
 };
 
+/**
+ * TODO: Jklethinen did this as a real object, which is probably better....
+ */
+#define NR_BUCKETS 5
+class MutualInformation {
+public:
+	static float mutualinfo(vector<SampleData> &neighbourhood, int firstChannel, int secondChannel) {
+		for (SampleData& s: neighbourhood) {
+			int hist_a[NR_BUCKETS];
+			int hist_b[NR_BUCKETS];
+			for (int i = 0; i < NR_BUCKETS; i++) {
+				hist_a[i] = hist_b[i] = 0;
+			}
+			int a = quantize(s[firstChannel]);
+			int b = quantize(s[secondChannel]);
+			hist_a[a]++;
+			hist_b[b]++;
+		}
+		return 0.f;
+	}
+
+private:
+	static inline int quantize(float v) {
+		v = (v+2)/4;
+		v *= NR_BUCKETS-1;
+		int bucket = (int)(v + 0.5f);
+		return min(max(bucket, 0), NR_BUCKETS - 1);
+	}
+};
+
 #endif
