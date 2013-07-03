@@ -101,6 +101,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	// add all samples of current pixel
 	for (int i = 0; i < spp; i++) {
 		neighbourhood.push_back(allSamples[pixelIdx + i]);
+		neighbourhoodIdxs.push_back(pixelIdx + i);
 	}
 
 	// add more samples from neighbourhood
@@ -137,7 +138,9 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 
 	if (DEBUG) {
 		fprintf(debugLog, "\nSamples in Neighbourhood: \n");
-		for (unsigned int i=0;i<neighbourhood.size();i++) {fprintf(debugLog, "[%d,%d]",neighbourhood[i].x, neighbourhood[i].y); }
+		for (unsigned int i=0;i<neighbourhood.size();i++) {
+			fprintf(debugLog, "[%d,%d: %d]",neighbourhood[i].x, neighbourhood[i].y, neighbourhoodIdxs[i]);
+		}
 	}
 
 	// Normalization of neighbourhood
