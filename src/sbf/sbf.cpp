@@ -183,14 +183,6 @@ void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
 
     WriteImage(filenameBase+"_sbf_img"+filenameExt, colImg, xres, yres);
     WriteImage(filenameBase+"_sbf_flt"+filenameExt, fltImg, xres, yres);
-    TwoDArray<Color> sImg = TwoDArray<Color>(xPixelCount, yPixelCount);
-    for(int y = 0; y < yPixelCount; y++)
-        for(int x = 0; x < xPixelCount; x++) {
-            float sc = (float)(*pixelInfos)(x, y).sampleCount;
-            sImg(x, y) = Color(sc, sc, sc);
-        }        
-    WriteImage(filenameBase+"_sbf_smp"+filenameExt, sImg, xres, yres);
-    WriteImage(filenameBase+"_sbf_param"+filenameExt, sigmaImg, xres, yres);
 
     if(dump) { // Write debug images
         WriteImage(filenameBase+"_sbf_var"+filenameExt, varImg, xres, yres);
@@ -337,20 +329,9 @@ void SBF::Update(bool final) {
 
     }
 
-    minMseImg = numeric_limits<float>::infinity();   
-    for(size_t i = 0; i < sigma.size(); i++) {
-#pragma omp parallel for num_threads(PbrtOptions.nCores)
-        for(int y = 0; y < yPixelCount; y++)
-            for(int x = 0; x < xPixelCount; x++) {
-                float error = fltMseArray[i](x, y);
-                if(error < minMseImg(x, y)) {
-                    Color c = fltArray[i](x, y);
-                    adaptImg(x, y) = error/(c.Y()*c.Y()+1e-3f);
-                    minMseImg(x, y) = error;
-                    fltImg(x, y) = c;
-                    sigmaImg(x, y) = Color((float)i/(float)sigma.size());
-                }
-            }
+    for (SampleData &s: allSamples) {
+    	fltImg(s.x, s.y) = Color(s.outputColors);
     }
+
 }
 
