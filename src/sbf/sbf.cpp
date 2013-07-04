@@ -329,8 +329,14 @@ void SBF::Update(bool final) {
 
     }
 
-    for (SampleData &s: allSamples) {
-    	fltImg(s.x, s.y) = Color(s.outputColors);
+    for (uint i=0; i < allSamples.size(); i+=spp) {
+    	Color c;
+    	for (int j=0; j<spp; j++)
+    		for(int k=0; k<3;k++){
+    			c[k] += allSamples[i+j].outputColors[k];
+    		}
+    	c /= spp;
+    	fltImg(allSamples[i].x, allSamples[i].y) = c;
     }
 
 }
