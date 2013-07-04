@@ -247,7 +247,7 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 
 	const float scale_f = -sqr(1.f - W_r_c) / (2*var);
 	const float scale_c = scale_f;
-
+	if (DEBUG) fprintf(debugLog, "\nInput colors vs Output colors:\n");
 	for (int i=0; i<spp; i++) {
 		float color[3];
 		for (int j=0; j<3;j++) {color[j] = 0.f; }
@@ -272,9 +272,9 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 		SampleData &s = allSamples[neighbourhoodIdxs[i]];
 		for (int k = 0; k <3; k++) { //can I assign the whole array at once?
 			s.outputColors[k] = color[k]/spp;
+			if (DEBUG) fprintf(debugLog, "%-.3f, %-.3f\n", s.inputColors[k], s.outputColors[k]);
 		}
 	}
-
 	//TODO: HDR Clamp
 }
 
