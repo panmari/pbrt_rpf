@@ -192,6 +192,8 @@ void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
             for(int x = 0; x < norImg.GetColNum(); x++) {
                 norImg(x, y) += Color(1.f, 1.f, 1.f);
                 norImg(x, y) /= 2.f;
+                secNormalImg(x, y) += Color(1.f, 1.f, 1.f);
+                secNormalImg(x, y) /= 2.f;
             }
         WriteImage(filenameBase+"_sbf_nor"+filenameExt, norImg, xres, yres);
 
@@ -232,14 +234,15 @@ bool SBF::comparator(SampleData sd1, SampleData sd2) {
 }
 
 void SBF::Update(bool final) {
+	ProgressReporter reporter(2, "Putting together debug images");
     std::sort(allSamples.begin(), allSamples.end(), SBF::comparator);
-    ProgressReporter reporter(1, "Putting together debug images");
+    reporter.Update(1);
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
     for(uint i = 0; i < allSamples.size(); i++) {
 		SampleData sd = allSamples[i];
 
-		int x = Floor2Int(sd.imgPos[0])-xPixelStart;
-		int y = Floor2Int(sd.imgPos[1])-yPixelStart;
+		int x = sd.x;
+		int y = sd.y;
 
 		Color rgbC = Color(sd.rgb); //color in RGB
 		Color normalC = Color(sd.normal);
@@ -252,16 +255,29 @@ void SBF::Update(bool final) {
 		Color thirdOriginC = Color(sd.thirdOrigin);
 		Color lensC = Color(sd.lensPos[0], sd.lensPos[1], 0.f);
 
-		colImg(x, y) = rgbC;
-		norImg(x, y) = normalC;
-		rhoImg(x, y) = rhoC;
+		colImg(x, y) += rgbC;
+		norImg(x, y) += normalC;
+		rhoImg(x, y) += rhoC;
 		//new
-		secNormalImg(x, y) = secNormalC;
-		secOrigImg(x, y) = secOriginC;
-		thirdOrigImg(x, y) = thirdOriginC;
-		lensImg(x, y) = lensC;
+		secNormalImg(x, y) += secNormalC;
+		secOrigImg(x, y) += secOriginC;
+		thirdOrigImg(x, y) += thirdOriginC;
+		lensImg(x, y) += lensC;
 	}
-    reporter.Update();
+    reporter.Update(1);
+    for (int y=0; y < yPixelCount; y++) {
+    	for (int x = 0; x < xPixelCount; x++) {
+    		colImg(x, y) /= spp;
+			norImg(x, y) /= spp;
+			rhoImg(x, y) /= spp;
+			//new
+			secNormalImg(x, y) /= spp;
+			secOrigImg(x, y) /= spp;
+			thirdOrigImg(x, y) /= spp;
+			lensImg(x, y) /= spp;
+    	}
+    }
+
     reporter.Done();
 
     TwoDArray<Color> rColImg = colImg;
@@ -326,7 +342,6 @@ void SBF::Update(bool final) {
     } else { //fType == RANDOM_PARAMETER_FILTER
     	RandomParameterFilter rpf(xPixelCount, yPixelCount, spp, allSamples);
     	rpf.Apply();
-
     }
 
     for (uint i=0; i < allSamples.size(); i+=spp) {

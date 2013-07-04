@@ -35,6 +35,7 @@
 #include "fmath.hpp"
 #include "parallel.h"
 #include "progressreporter.h"
+#include "imageio.h"
 #include<boost/range/numeric.hpp>
 const int BOX_SIZE[] = { 55, 35, 17, 7 };
 const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f };
@@ -88,11 +89,26 @@ void RandomParameterFilter::Apply() {
 			}
 			filterColorSamples(alpha, beta, W_r_c, neighbourhood, neighbourhoodIdxs);
 
-			if (pixel_nr % 1000 == 0) {
-				reporter.Update(iterStep*w*h + pixel_nr);
+			if (pixel_nr % 40000 == 0) {
+				reporter.Update(40000);
 			}
 		}
 
+		//TODO: make this work
+		if (DEBUG) { //print result of this iteration
+			TwoDArray<Color> iteration_img = TwoDArray<Color>(w, h);
+			for (uint i=0; i < allSamples.size(); i+=spp) {
+				Color c;
+				for (int j=0; j<spp; j++)
+					for(int k=0; k<3;k++){
+						c[k] += allSamples[i+j].inputColors[k];
+					}
+				c /= spp;
+				iteration_img(allSamples[i].x, allSamples[i].y) = c;
+			}
+		    WriteImage("iter" + std::to_string(iterStep) + "_sbf_img.exr", (float*)iteration_img.GetRawPtr(), NULL,
+		    		w, h, 0,0,0,0);
+		}
 		//write output to input
 		for (SampleData &s: allSamples) {
 			for (int k=0; k<3; k++) {
