@@ -275,7 +275,34 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 			if (DEBUG) fprintf(debugLog, "%-.3f, %-.3f\n", s.inputColors[k], s.outputColors[k]);
 		}
 	}
-	//TODO: HDR Clamp
+	// HDR Clamp
+	float colorMean[3], colorMeanSquare[3], colorStd[3];
+	for (int i=0; i<3; i++) { colorMean[i] = colorMeanSquare[i] = colorStd[i] = 0.f; }
+	for (int i=0; i<spp; i++) {
+		SampleData &s = allSamples[neighbourhoodIdxs[i]];
+		for(int j=0; j<3; j++) {
+			colorMean[j] += s.outputColors[j];
+			colorMeanSquare[j] += sqr(s.outputColors[j]);
+		}
+	}
+	for (int i=0; i<3; i++) {
+		colorMean[i] /= spp;
+		colorMeanSquare[i] /= spp;
+		colorStd[i] = sqrt(max(0.f, colorMeanSquare[i] - sqr(colorMean[i])));
+	}
+#define STD_FACTOR 1
+	for (int i=0; i<spp; i++) {
+		SampleData &s = allSamples[neighbourhoodIdxs[i]];
+		if( fabs(s.outputColors[0] - colorMean[0]) > STD_FACTOR*colorStd[0] ||
+			fabs(s.outputColors[1] - colorMean[1]) > STD_FACTOR*colorStd[1] ||
+			fabs(s.outputColors[2] - colorMean[2]) > STD_FACTOR*colorStd[2]) {
+			for (int j=0; j<3;j++) {
+				s.outputColors[j] = colorMean[j];
+			}
+		}
+	}
+
+	//TODO: reinsert energy from hdr clamp
 }
 
 
@@ -284,10 +311,10 @@ void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
 	SampleData pixelMeanSquare;
 	for (int sampleOffset = 0; sampleOffset < spp; sampleOffset++) {
 		const SampleData &currentSample = allSamples[pixelIdx + sampleOffset];
-		for(int f=0;f<SampleData::getSize();f++)
+		for(int f=0;f<SampleData::getFeaturesSize();f++)
 		{
 			pixelMean[f] += currentSample[f];
-			pixelMeanSquare[f] += currentSample[f]*currentSample[f];
+			pixelMeanSquare[f] += sqr(currentSample[f]);
 		}
 	}
 		for(int f=0;f<SampleData::getSize();f++)
