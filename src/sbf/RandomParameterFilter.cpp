@@ -27,7 +27,7 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  */
-#define DEBUG true
+#define DEBUG false
 #define EPSILON 1e-10
 
 #include "RandomParameterFilter.h"
@@ -58,8 +58,8 @@ void RandomParameterFilter::Apply() {
 	ProgressReporter reporter(4, "Applying RPF filter");
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		reporter.Update(iterStep);
-		for (int pixel_nr = 0; pixel_nr < 1; pixel_nr++) { //do only one pixel
-		//for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
+		//for (int pixel_nr = 0; pixel_nr < 1; pixel_nr++) { //do only one pixel
+		for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
 			const int pixel_idx = pixel_nr * spp;
 			vector<int> neighbourhoodIdxs;
 			vector<SampleData> neighbourhood = determineNeighbourhood(
