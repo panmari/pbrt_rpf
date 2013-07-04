@@ -88,8 +88,8 @@ void RandomParameterFilter::Apply() {
 			}
 			filterColorSamples(alpha, beta, W_r_c, neighbourhood, neighbourhoodIdxs);
 
-			if (pixel_nr % 1000 == 0) {
-				reporter.Update(iterStep*w*h + pixel_nr);
+			if (pixel_nr % 40000 == 0) {
+				reporter.Update(40000);
 			}
 		}
 
