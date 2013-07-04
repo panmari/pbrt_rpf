@@ -89,6 +89,13 @@ void RandomParameterFilter::Apply() {
 			}
 			filterColorSamples(alpha, beta, W_r_c, neighbourhood, neighbourhoodIdxs);
 		}
+
+		//write output to input
+		for (SampleData &s: allSamples) {
+			for (int k=0; k<3; k++) {
+				s.inputColors[k] = s.outputColors[k];
+			}
+		}
 	}
 
 	reporter.Done();
@@ -238,8 +245,37 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 	const float var_8 = 0.002;
 	const float var = 8*var_8/spp;
 
-	const float scale_f = -sqrt(1 - W_r_c) / (2*var);
+	const float scale_f = -sqr(1.f - W_r_c) / (2*var);
 	const float scale_c = scale_f;
+
+	for (int i=0; i<spp; i++) {
+		float color[3];
+		for (int j=0; j<3;j++) {color[j] = 0.f; }
+		for (uint j=0; j<neighbourhood.size(); j++) {
+			float dist_c = 0.f;
+			for (int k=0; k<SampleData::getColorSize(); k++) {
+				const int offset = k + SampleData::getColorOffset();
+				dist_c += alpha[k] * sqr(neighbourhood[i][offset] - neighbourhood[j][offset]);
+			}
+
+			float dist_f = 0.f;
+			for (int k=0; k<SampleData::getFeaturesSize(); k++) {
+				const int offset = k + SampleData::getFeaturesOffset();
+				dist_f += beta[k] * sqr(neighbourhood[i][offset] - neighbourhood[j][offset]);
+			}
+
+			const float w_ij = exp(scale_c*dist_c + scale_f*dist_f);
+			for (int k=0; k < 3; k++) {
+				color[k] += neighbourhood[i].inputColors[k]*w_ij; //should not be normalized, check?
+			}
+		}
+		SampleData &s = allSamples[neighbourhoodIdxs[i]];
+		for (int k = 0; k <3; k++) { //can I assign the whole array at once?
+			s.outputColors[k] = color[k]/spp;
+		}
+	}
+
+	//TODO: HDR Clamp
 }
 
 

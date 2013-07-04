@@ -61,6 +61,7 @@ private:
     void computeWeights(vector<float> &alpha, vector<float> &beta, float &W_r_c, vector<SampleData> &neighbourhood,int iterStep);
     void filterColorSamples(vector<float> &alpha, vector<float> &beta, float W_r_c, vector<SampleData> &neighbourhood, vector<int> &neighbourhoodIdxs);
     //some helpers
+    float sqr(float a) {return a*a;};
     void getPixelMeanAndStd(int pixelIdx, SampleData &sampleMean, SampleData &sampleStd);
     void getGaussian(float stddev, int meanX, int meanY, int &x, int &y);
     SampleData& getRandomSampleAt(int x, int y, int &idx); //TODO: long for veeery big images?
