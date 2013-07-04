@@ -55,9 +55,8 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 }
 
 void RandomParameterFilter::Apply() {
-	ProgressReporter reporter(4, "Applying RPF filter");
+	ProgressReporter reporter(w*h*4, "Applying RPF filter");
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
-		reporter.Update(iterStep);
 		for (int pixel_nr = 0; pixel_nr < 1; pixel_nr++) { //do only one pixel
 		//for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
 			const int pixel_idx = pixel_nr * spp;
@@ -88,6 +87,10 @@ void RandomParameterFilter::Apply() {
 				fflush(debugLog);
 			}
 			filterColorSamples(alpha, beta, W_r_c, neighbourhood, neighbourhoodIdxs);
+
+			if (pixel_nr % 1000 == 0) {
+				reporter.Update(iterStep*w*h + pixel_nr);
+			}
 		}
 
 		//write output to input
