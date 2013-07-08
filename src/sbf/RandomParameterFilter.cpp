@@ -264,7 +264,7 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 	const float var_8 = 0.002;
 	const float var = 8*var_8/spp;
 
-	const float scale_f = -sqr(1.f - W_r_c) / (2*var);
+	const float scale_f = -sqr(1 - W_r_c) / (2*var);
 	const float scale_c = scale_f;
 	if (DEBUG) fprintf(debugLog, "\nInput colors vs Output colors:\n");
 	for (int i=0; i<spp; i++) {
@@ -285,7 +285,7 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 
 			const float w_ij = exp(scale_c*dist_c + scale_f*dist_f);
 			for (int k=0; k < 3; k++) {
-				color[k] += neighbourhood[i].inputColors[k]*w_ij; //should not be normalized, check?
+				color[k] += neighbourhood[j].inputColors[k]*w_ij; //should not be normalized, check?
 			}
 		}
 		SampleData &s = allSamples[neighbourhoodIdxs[i]];
