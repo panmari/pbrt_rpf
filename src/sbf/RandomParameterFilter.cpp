@@ -28,7 +28,7 @@
 
  */
 #define DEBUG true
-#define DEBUG_PIXEL_NR 163 + 280*w
+#define DEBUG_PIXEL_NR 262 + 255*w
 #define EPSILON 1e-10
 
 #include "RandomParameterFilter.h"
@@ -167,7 +167,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	}
 
 	if (DEBUG) {
-		fprintf(debugLog, "\nSamples in Neighbourhood: \n");
+		fprintf(debugLog, "\nSamples in Neighbourhood (%ld): \n", neighbourhood.size());
 		for (unsigned int i=0;i<neighbourhood.size();i++) {
 			fprintf(debugLog, "[%d,%d: %d]", neighbourhood[i].x, neighbourhood[i].y, neighbourhoodIdxs[i]);
 		}
@@ -310,8 +310,8 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 		}
 	}
 	// HDR Clamp
-	float colorMean[3], colorMeanSquare[3], colorStd[3];
-	for (int i=0; i<3; i++) { colorMean[i] = colorMeanSquare[i] = colorStd[i] = 0.f; }
+	float colorMean[3], colorMeanSquare[3], colorStd[3], colorMeanAfter[3];;
+	for (int i=0; i<3; i++) { colorMean[i] = colorMeanSquare[i] = colorStd[i] = colorMeanAfter[i] = 0.f; }
 	for (int i=0; i<spp; i++) {
 		SampleData &s = allSamples[neighbourhoodIdxs[i]];
 		for(int j=0; j<3; j++) {
@@ -334,30 +334,47 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 				s.outputColors[j] = colorMean[j];
 			}
 		}
+		for (int j=0; j<3; j++) {
+			colorMeanAfter[j] += s.outputColors[j];
+		}
 	}
 
-	//TODO: reinsert energy from hdr clamp
+	// reinsert energy from HDR clamp
+	float lostEnergyPerSample[3];
+	for (int i=0; i<3; i++) { lostEnergyPerSample[i] = colorMean[i] - colorMeanAfter[i]; }
+	for (int i=0; i<spp; i++) {
+		SampleData &s = allSamples[neighbourhoodIdxs[i]];
+		for (int j=0; j<3; j++) {
+			s.outputColors[j] += lostEnergyPerSample[j];
+		}
+	}
 }
 
-
+/**
+ * Only the features of the returned SampleData contain the desired values.
+ * Everything else is set to 0 (rgb, random params etc.)
+ * Only x, y are taken from the first sample of the pixel and assigned to pixelMean
+ */
 void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
 		SampleData &pixelMean, SampleData &pixelStd) {
 	SampleData pixelMeanSquare;
+	//set x and y separately
+	pixelMean.x = allSamples[pixelIdx].x;
+	pixelMean.y = allSamples[pixelIdx].y;
 	for (int sampleOffset = 0; sampleOffset < spp; sampleOffset++) {
 		const SampleData &currentSample = allSamples[pixelIdx + sampleOffset];
-		for(int f=0;f<SampleData::getSize();f++)
+		for(int f=0;f<SampleData::getFeaturesSize();f++)
 		{
 			pixelMean[f] += currentSample[f];
 			pixelMeanSquare[f] += sqr(currentSample[f]);
 		}
 	}
-		for(int f=0;f<SampleData::getSize();f++)
+	for(int f=0;f<SampleData::getFeaturesSize();f++)
 		{
-			//TODO: doing this with int (.x, .y) could cause issues
 			pixelMean[f] /= spp;
 			pixelMeanSquare[f] /= spp;
 
-			pixelStd[f] = sqrt(max(0.f,pixelMeanSquare[f] - pixelMean[f]*pixelMean[f]));	// max() avoids accidental NaNs
+			pixelStd[f] = sqrt(max(0.f, pixelMeanSquare[f] - sqr(pixelMean[f]) ));	// max() avoids accidental NaNs
 		}
 	}
 
