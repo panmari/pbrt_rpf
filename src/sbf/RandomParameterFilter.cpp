@@ -28,6 +28,7 @@
 
  */
 #define DEBUG false
+#define DEBUG_PIXEL_NR 163 + 280*w
 #define EPSILON 1e-10
 
 #include "RandomParameterFilter.h"
@@ -58,7 +59,8 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 void RandomParameterFilter::Apply() {
 	ProgressReporter reporter(w*h*4, "Applying RPF filter");
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
-		//for (int pixel_nr = 0; pixel_nr < 1; pixel_nr++) { //do only one pixel
+		if (DEBUG) fprintf(debugLog, "\n*** Starting pass number %d ***\n", iterStep);
+		//for (int pixel_nr = DEBUG_PIXEL_NR ; pixel_nr <= DEBUG_PIXEL_NR ; pixel_nr++) { //do only one pixel
 		for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
 			const int pixel_idx = pixel_nr * spp;
 			vector<int> neighbourhoodIdxs;
@@ -95,6 +97,7 @@ void RandomParameterFilter::Apply() {
 		}
 
 		//TODO: make this work
+		/*
 		if (DEBUG) { //print result of this iteration
 			TwoDArray<Color> iteration_img = TwoDArray<Color>(w, h);
 			for (uint i=0; i < allSamples.size(); i+=spp) {
@@ -109,6 +112,7 @@ void RandomParameterFilter::Apply() {
 		    WriteImage("iter" + std::to_string(iterStep) + "_sbf_img.exr", (float*)iteration_img.GetRawPtr(), NULL,
 		    		w, h, 0,0,0,0);
 		}
+		*/
 		//write output to input
 		for (SampleData &s: allSamples) {
 			for (int k=0; k<3; k++) {
@@ -167,6 +171,15 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		for (unsigned int i=0;i<neighbourhood.size();i++) {
 			fprintf(debugLog, "[%d,%d: %d]",neighbourhood[i].x, neighbourhood[i].y, neighbourhoodIdxs[i]);
 		}
+		//that's very verbose...
+		/*
+		fprintf(debugLog, "\nRgb vs input_colors: \n");
+		for (unsigned int i=0;i<neighbourhood.size();i++) {
+			for (int j=0; j <3;j++) {
+				fprintf(debugLog, "%-.3f\t%-.3f\n",neighbourhood[i].rgb[j], neighbourhood[i].inputColors[j]);
+			}
+		}
+		*/
 	}
 
 	// Normalization of neighbourhood
@@ -261,15 +274,16 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 
 void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<float> &beta, float W_r_c,
 		vector<SampleData> &neighbourhood, vector<int> &neighbourhoodIdxs) {
-	const float var_8 = 0.002;
+	const float var_8 = 0.002f;
 	const float var = 8*var_8/spp;
 
-	const float scale_f = -sqr(1.f - W_r_c) / (2*var);
+	const float scale_f = -sqr(1 - W_r_c) / (2*var);
 	const float scale_c = scale_f;
-	if (DEBUG) fprintf(debugLog, "\nInput colors vs Output colors:\n");
+	if (DEBUG) fprintf(debugLog, "\nInput colors vs Output colors (before HDR Clamp):\n");
 	for (int i=0; i<spp; i++) {
 		float color[3];
 		for (int j=0; j<3;j++) {color[j] = 0.f; }
+		float sum_relative_weights = 0.f;
 		for (uint j=0; j<neighbourhood.size(); j++) {
 			float dist_c = 0.f;
 			for (int k=0; k<SampleData::getColorSize(); k++) {
@@ -284,17 +298,45 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 			}
 
 			const float w_ij = exp(scale_c*dist_c + scale_f*dist_f);
+			sum_relative_weights += w_ij;
 			for (int k=0; k < 3; k++) {
-				color[k] += neighbourhood[i].inputColors[k]*w_ij; //should not be normalized, check?
+				color[k] += neighbourhood[j].inputColors[k]*w_ij; //should not be normalized, check?
 			}
 		}
 		SampleData &s = allSamples[neighbourhoodIdxs[i]];
 		for (int k = 0; k <3; k++) { //can I assign the whole array at once?
-			s.outputColors[k] = color[k]/spp;
+			s.outputColors[k] = color[k]/sum_relative_weights;
 			if (DEBUG) fprintf(debugLog, "%-.3f, %-.3f\n", s.inputColors[k], s.outputColors[k]);
 		}
 	}
-	//TODO: HDR Clamp
+	// HDR Clamp
+	float colorMean[3], colorMeanSquare[3], colorStd[3];
+	for (int i=0; i<3; i++) { colorMean[i] = colorMeanSquare[i] = colorStd[i] = 0.f; }
+	for (int i=0; i<spp; i++) {
+		SampleData &s = allSamples[neighbourhoodIdxs[i]];
+		for(int j=0; j<3; j++) {
+			colorMean[j] += s.outputColors[j];
+			colorMeanSquare[j] += sqr(s.outputColors[j]);
+		}
+	}
+	for (int i=0; i<3; i++) {
+		colorMean[i] /= spp;
+		colorMeanSquare[i] /= spp;
+		colorStd[i] = sqrt(max(0.f, colorMeanSquare[i] - sqr(colorMean[i])));
+	}
+#define STD_FACTOR 1
+	for (int i=0; i<spp; i++) {
+		SampleData &s = allSamples[neighbourhoodIdxs[i]];
+		if( fabs(s.outputColors[0] - colorMean[0]) > STD_FACTOR*colorStd[0] ||
+			fabs(s.outputColors[1] - colorMean[1]) > STD_FACTOR*colorStd[1] ||
+			fabs(s.outputColors[2] - colorMean[2]) > STD_FACTOR*colorStd[2]) {
+			for (int j=0; j<3;j++) {
+				s.outputColors[j] = colorMean[j];
+			}
+		}
+	}
+
+	//TODO: reinsert energy from hdr clamp
 }
 
 
@@ -306,11 +348,12 @@ void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
 		for(int f=0;f<SampleData::getSize();f++)
 		{
 			pixelMean[f] += currentSample[f];
-			pixelMeanSquare[f] += currentSample[f]*currentSample[f];
+			pixelMeanSquare[f] += sqr(currentSample[f]);
 		}
 	}
 		for(int f=0;f<SampleData::getSize();f++)
 		{
+			//TODO: doing this with int (.x, .y) could cause issues
 			pixelMean[f] /= spp;
 			pixelMeanSquare[f] /= spp;
 
