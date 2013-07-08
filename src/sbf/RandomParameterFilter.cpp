@@ -28,7 +28,7 @@
 
  */
 #define DEBUG true
-#define DEBUG_PIXEL_NR 262 + 255*w
+#define DEBUG_PIXEL_NR 15 + 213*w
 #define EPSILON 1e-10
 
 #include "RandomParameterFilter.h"
@@ -337,6 +337,10 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 		for (int j=0; j<3; j++) {
 			colorMeanAfter[j] += s.outputColors[j];
 		}
+	}
+
+	for (int j=0; j<3; j++) {
+		colorMeanAfter[j] /= spp;
 	}
 
 	// reinsert energy from HDR clamp
