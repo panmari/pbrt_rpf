@@ -57,6 +57,8 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 }
 
 void RandomParameterFilter::Apply() {
+	//TODO: preprocess to find "invalid samples" (@jklethinen with invalid normal)
+
 	ProgressReporter reporter(w*h*4, "Applying RPF filter");
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		if (DEBUG) fprintf(debugLog, "\n*** Starting pass number %d ***\n", iterStep);
