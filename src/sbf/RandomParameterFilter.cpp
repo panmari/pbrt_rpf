@@ -91,8 +91,8 @@ void RandomParameterFilter::Apply() {
 			}
 			filterColorSamples(alpha, beta, W_r_c, neighbourhood, neighbourhoodIdxs);
 
-			if (pixel_nr % 40000 == 0) {
-				reporter.Update(40000);
+			if (pixel_nr % w == 0) {
+				reporter.Update(w);
 			}
 		}
 
@@ -169,7 +169,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	if (DEBUG) {
 		fprintf(debugLog, "\nSamples in Neighbourhood: \n");
 		for (unsigned int i=0;i<neighbourhood.size();i++) {
-			fprintf(debugLog, "[%d,%d: %d]",neighbourhood[i].x, neighbourhood[i].y, neighbourhoodIdxs[i]);
+			fprintf(debugLog, "[%d,%d: %d]", neighbourhood[i].x, neighbourhood[i].y, neighbourhoodIdxs[i]);
 		}
 		//that's very verbose...
 		/*
