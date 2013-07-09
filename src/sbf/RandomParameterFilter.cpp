@@ -39,8 +39,8 @@
 #include "imageio.h"
 #include<boost/range/numeric.hpp>
 const int BOX_SIZE[] = { 55, 35, 17, 7 };
-//const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f }; // for fast prototyping, by jklethinen
-const float MAX_SAMPLES_FACTOR[] = { 0.5f, 0.5f, 0.5f, 0.5f }; // by sen
+const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f }; // for fast prototyping, by jklethinen
+//const float MAX_SAMPLES_FACTOR[] = { 0.5f, 0.5f, 0.5f, 0.5f }; // by sen
 int MAX_SAMPLES[4];
 
 RandomParameterFilter::RandomParameterFilter(const int width, const int height,
@@ -206,8 +206,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &beta,
 		float &W_r_c, vector<SampleData> &neighbourhood,int iterStep) {
 
-	// dependency for colors
-
+	MutualInformation mi;
 	vector<float> m_D_rk_c = vector<float>(SampleData::getRandomParametersSize());
 	vector<float> m_D_pk_c = vector<float>(SampleData::getImgPosSize());
 	vector<float> m_D_fk_c = vector<float>(SampleData::getFeaturesSize());
@@ -217,15 +216,15 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 
 	for(int l=0; l < SampleData::getColorSize(); l++) {
 		for(int k=0; k < SampleData::getRandomParametersSize(); k++) {
-			m_D_rk_c[k] += MutualInformation::mutualinfo(neighbourhood,
+			m_D_rk_c[k] += mi.mutualinfo(neighbourhood,
 					l + SampleData::getColorOffset(), k + SampleData::getRandomParamsOffset());
 		}
 		for(int k=0; k < SampleData::getImgPosSize(); k++) {
-			m_D_pk_c[k] += MutualInformation::mutualinfo(neighbourhood,
+			m_D_pk_c[k] += mi.mutualinfo(neighbourhood,
 					l + SampleData::getColorOffset(), k + SampleData::getImgPosOffset());
 		}
 		for(int k=0; k < SampleData::getFeaturesSize(); k++) {
-			m_D_fk_c[k] += MutualInformation::mutualinfo(neighbourhood,
+			m_D_fk_c[k] += mi.mutualinfo(neighbourhood,
 					l + SampleData::getColorOffset(), k + SampleData::getFeaturesOffset());
 		}
 	}
@@ -240,11 +239,11 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 
 	for(int k = 0; k < SampleData::getFeaturesSize(); k++) {
 		for(int l = 0; l < SampleData::getRandomParametersSize(); l++) {
-			m_D_fk_rl[k][l] = MutualInformation::mutualinfo(neighbourhood,
+			m_D_fk_rl[k][l] = mi.mutualinfo(neighbourhood,
 					l + SampleData::getRandomParamsOffset(), k + SampleData::getFeaturesOffset());
 		}
 		for(int l=0; l < SampleData::getImgPosSize(); l++) {
-			m_D_fk_pl[k][l] = MutualInformation::mutualinfo(neighbourhood,
+			m_D_fk_pl[k][l] = mi.mutualinfo(neighbourhood,
 					l + SampleData::getImgPosOffset(), k + SampleData::getFeaturesOffset());
 		}
 		for(int l=0; l < SampleData::getColorSize(); l++) {

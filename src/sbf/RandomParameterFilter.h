@@ -69,23 +69,13 @@ private:
 
 /**
  * Again heavily inspired by jklethinens code.
- * Jklethinen did this as a real object, which is probably better....
+ * You must make an instance of this (instead of static), so memory for histograms only needs to be assigned once.
  */
 #define NR_BUCKETS 5
 class MutualInformation {
 public:
-	static float mutualinfo(vector<SampleData> &neighbourhood, int firstChannel, int secondChannel) {
-		//fill histograms
-		//these are actually only ints, but declaring them here as floats saves us a conversion later on
-		float hist_a[NR_BUCKETS];
-		float hist_b[NR_BUCKETS];
-		float hist_ab[NR_BUCKETS*NR_BUCKETS];
-		for (int i = 0; i < NR_BUCKETS; i++) {
-			hist_a[i] = hist_b[i] = 0.f;
-		}
-		for (int i = 0; i < NR_BUCKETS*NR_BUCKETS; i++) {
-			hist_ab[i] = 0.f;
-		}
+	float mutualinfo(vector<SampleData> &neighbourhood, int firstChannel, int secondChannel) {
+		clearHistograms();
 		for (SampleData& s: neighbourhood) {
 			int a = quantize(s[firstChannel]);
 			int b = quantize(s[secondChannel]);
@@ -117,6 +107,18 @@ public:
 	}
 
 private:
+	void clearHistograms() {
+		for (int i = 0; i < NR_BUCKETS; i++) {
+			hist_a[i] = hist_b[i] = 0.f;
+		}
+		for (int i = 0; i < NR_BUCKETS*NR_BUCKETS; i++) {
+			hist_ab[i] = 0.f;
+		}
+	}
+	float hist_a[NR_BUCKETS];
+	float hist_b[NR_BUCKETS];
+	float hist_ab[NR_BUCKETS*NR_BUCKETS];
+
 	static inline int quantize(float v) {
 		v = (v+2)/4;
 		v *= NR_BUCKETS-1;
