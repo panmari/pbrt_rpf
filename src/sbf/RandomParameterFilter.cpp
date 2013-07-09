@@ -27,8 +27,8 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  */
-#define DEBUG false
-#define DEBUG_PIXEL_NR 10 + 10*w
+#define DEBUG true
+#define DEBUG_PIXEL_NR 100 + 100*w
 #define EPSILON 1e-10
 
 #include "RandomParameterFilter.h"
@@ -50,8 +50,10 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 	this->h = height;
 	this->spp = spp;
 	this->rng = RNG(42);
-	this->debugLog = fopen("rpf.log", "w");
-	fprintf(debugLog, "Number of samples: %lu", allSamples.size());
+	if (DEBUG) {
+		this->debugLog = fopen("rpf.log", "w");
+		fprintf(debugLog, "Number of samples: %lu", allSamples.size());
+	}
 	for (int i = 0; i < 4; i++) {
 		MAX_SAMPLES[i] = pow(BOX_SIZE[i], 2) * spp * MAX_SAMPLES_FACTOR[0];
 	}
@@ -66,10 +68,10 @@ void RandomParameterFilter::Apply() {
 			vector<SampleData> neighbourhood = determineNeighbourhood(BOX_SIZE[iterStep], MAX_SAMPLES[iterStep], pixel_idx);
 
 			if (DEBUG) {
-				fprintf(debugLog, "\nNormalized feature vectors in neighbourhood: \n");
+				fprintf(debugLog, "\nNormalized parameters in neighbourhood: \n");
 				for (SampleData& s: neighbourhood) {
 					//verified with matlab, has mean 0 and std 1
-					for (int f=SampleData::getFeaturesOffset(); f < SampleData::getFeaturesSize(); f++) {fprintf(debugLog, "%-.3f ", s[f]); }
+					for (int f=0; f < SampleData::getLastNormalizedOffset(); f++) {fprintf(debugLog, "%-.3f ", s[f]); }
 					fprintf(debugLog, "\n");
 				}
 				fflush(debugLog);
@@ -81,6 +83,7 @@ void RandomParameterFilter::Apply() {
 			computeWeights(alpha, beta, W_r_c, neighbourhood, iterStep);
 
 			if (DEBUG) {
+				fprintf(debugLog, "\nW_r_c: %-.3f", W_r_c);
 				fprintf(debugLog, "\nalpha: ");
 				for(uint i=0; i<alpha.size(); i++) { fprintf(debugLog, "%-.3f, ", alpha[i]); }
 				fprintf(debugLog, "\nbeta: ");
@@ -157,7 +160,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		}
 
 		if (flag) {
-			//by standard, this pushes a copy there
+			//by default, this pushes a copy there
 			neighbourhood.push_back(sample);
 		}
 	}
