@@ -117,7 +117,7 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
     sd.x = x;
     sd.y = y;
     for(int i = 0; i < 3; i++) {
-    	sd.inputColors[i] = sd.rgb[i] = xyz[i];
+    	sd.outputColors[i] = sd.inputColors[i] = sd.rgb[i] = xyz[i]; //bit dangerous to also apply this to output color
     	sd.rho[i] = rhoXYZ[i];
     	sd.normal[i] = isect.shadingN[i];
     	sd.secondNormal[i] = isect.secondNormal[i];
