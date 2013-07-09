@@ -63,9 +63,7 @@ void RandomParameterFilter::Apply() {
 		if (DEBUG) fprintf(debugLog, "\n*** Starting pass number %d ***\n", iterStep);
 		for (int pixel_nr = DEBUG_PIXEL_NR ; pixel_nr <= DEBUG_PIXEL_NR ; pixel_nr++) { //do only one pixel
 			const int pixel_idx = pixel_nr * spp;
-			vector<int> neighbourhoodIdxs;
-			vector<SampleData> neighbourhood = determineNeighbourhood(
-					BOX_SIZE[iterStep], MAX_SAMPLES[iterStep], pixel_idx, neighbourhoodIdxs);
+			vector<SampleData> neighbourhood = determineNeighbourhood(BOX_SIZE[iterStep], MAX_SAMPLES[iterStep], pixel_idx);
 
 			if (DEBUG) {
 				fprintf(debugLog, "\nNormalized feature vectors in neighbourhood: \n");
@@ -89,7 +87,7 @@ void RandomParameterFilter::Apply() {
 				for(uint i=0; i<beta.size(); i++) { fprintf(debugLog, "%-.3f, ", beta[i]); }
 				fflush(debugLog);
 			}
-			filterColorSamples(alpha, beta, W_r_c, neighbourhood, neighbourhoodIdxs);
+			filterColorSamples(alpha, beta, W_r_c, neighbourhood, pixel_idx);
 
 			if (pixel_nr % w == 0) {
 				reporter.Update(w);
@@ -125,13 +123,12 @@ void RandomParameterFilter::Apply() {
 }
 
 vector<SampleData> RandomParameterFilter::determineNeighbourhood(
-		const int boxsize, const int maxSamples, const int pixelIdx, vector<int> &neighbourhoodIdxs) {
+		const int boxsize, const int maxSamples, const int pixelIdx) {
 	vector<SampleData> neighbourhood;
 	neighbourhood.reserve(maxSamples);
 	// add all samples of current pixel
 	for (int i = 0; i < spp; i++) {
 		neighbourhood.push_back(allSamples[pixelIdx + i]);
-		neighbourhoodIdxs.push_back(pixelIdx + i);
 	}
 
 	// add more samples from neighbourhood
@@ -162,14 +159,13 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		if (flag) {
 			//by standard, this pushes a copy there
 			neighbourhood.push_back(sample);
-			neighbourhoodIdxs.push_back(idx);
 		}
 	}
 
 	if (DEBUG) {
 		fprintf(debugLog, "\nSamples in Neighbourhood (%ld): \n", neighbourhood.size());
 		for (unsigned int i=0;i<neighbourhood.size();i++) {
-			fprintf(debugLog, "[%d,%d: %d]", neighbourhood[i].x, neighbourhood[i].y, neighbourhoodIdxs[i]);
+			fprintf(debugLog, "[%d,%d]", neighbourhood[i].x, neighbourhood[i].y);
 		}
 		//that's very verbose...
 		/*
@@ -273,7 +269,7 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 }
 
 void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<float> &beta, float W_r_c,
-		vector<SampleData> &neighbourhood, vector<int> &neighbourhoodIdxs) {
+		vector<SampleData> &neighbourhood, int pixelIdx) {
 	const float var_8 = 0.002f;
 	const float var = 8*var_8/spp;
 
@@ -303,7 +299,7 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 				color[k] += neighbourhood[j].inputColors[k]*w_ij; //should not be normalized, check?
 			}
 		}
-		SampleData &s = allSamples[neighbourhoodIdxs[i]];
+		SampleData &s = allSamples[pixelIdx + i];
 		for (int k = 0; k <3; k++) { //can I assign the whole array at once?
 			s.outputColors[k] = color[k]/sum_relative_weights;
 			if (DEBUG) fprintf(debugLog, "%-.3f, %-.3f\n", s.inputColors[k], s.outputColors[k]);
@@ -313,7 +309,7 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 	float colorMean[3], colorMeanSquare[3], colorStd[3], colorMeanAfter[3];;
 	for (int i=0; i<3; i++) { colorMean[i] = colorMeanSquare[i] = colorStd[i] = colorMeanAfter[i] = 0.f; }
 	for (int i=0; i<spp; i++) {
-		SampleData &s = allSamples[neighbourhoodIdxs[i]];
+		SampleData &s = allSamples[pixelIdx + i];
 		for(int j=0; j<3; j++) {
 			colorMean[j] += s.outputColors[j];
 			colorMeanSquare[j] += sqr(s.outputColors[j]);
@@ -326,7 +322,7 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 	}
 #define STD_FACTOR 1
 	for (int i=0; i<spp; i++) {
-		SampleData &s = allSamples[neighbourhoodIdxs[i]];
+		SampleData &s = allSamples[pixelIdx + i];
 		if( fabs(s.outputColors[0] - colorMean[0]) > STD_FACTOR*colorStd[0] ||
 			fabs(s.outputColors[1] - colorMean[1]) > STD_FACTOR*colorStd[1] ||
 			fabs(s.outputColors[2] - colorMean[2]) > STD_FACTOR*colorStd[2]) {
@@ -347,7 +343,7 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 	float lostEnergyPerSample[3];
 	for (int i=0; i<3; i++) { lostEnergyPerSample[i] = colorMean[i] - colorMeanAfter[i]; }
 	for (int i=0; i<spp; i++) {
-		SampleData &s = allSamples[neighbourhoodIdxs[i]];
+		SampleData &s = allSamples[pixelIdx + i];
 		for (int j=0; j<3; j++) {
 			s.outputColors[j] += lostEnergyPerSample[j];
 		}

@@ -57,9 +57,9 @@ private:
 	vector<SampleData> &allSamples;
 	RNG rng; //random generator
 
-    vector<SampleData> determineNeighbourhood(const int boxsize, const int maxSamples, const int pixelIdx, vector<int> &neighbourhoodIdxs);
+    vector<SampleData> determineNeighbourhood(const int boxsize, const int maxSamples, const int pixelIdx);
     void computeWeights(vector<float> &alpha, vector<float> &beta, float &W_r_c, vector<SampleData> &neighbourhood,int iterStep);
-    void filterColorSamples(vector<float> &alpha, vector<float> &beta, float W_r_c, vector<SampleData> &neighbourhood, vector<int> &neighbourhoodIdxs);
+    void filterColorSamples(vector<float> &alpha, vector<float> &beta, float W_r_c, vector<SampleData> &neighbourhood, int currentPixelIdx);
     //some helpers
     inline float sqr(float a) {return a*a;};
     void getPixelMeanAndStd(int pixelIdx, SampleData &sampleMean, SampleData &sampleStd);
