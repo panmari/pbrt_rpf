@@ -30,7 +30,7 @@
 #define DEBUG false
 #define DEBUG_PIXEL_NR 163 + 280*w
 #define EPSILON 1e-10
-
+#define JOUNI 0.01f
 #include "RandomParameterFilter.h"
 
 #include "fmath.hpp"
@@ -271,7 +271,7 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 
 void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<float> &beta, float W_r_c,
 		vector<SampleData> &neighbourhood, int pixelIdx) {
-	const float var_8 = 0.002f;
+	const float var_8 = JOUNI;
 	const float var = 8*var_8/spp;
 
 	const float scale_f = -sqr(1 - W_r_c) / (2*var);
