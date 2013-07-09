@@ -28,7 +28,7 @@
 
  */
 #define DEBUG false
-#define DEBUG_PIXEL_NR 163 + 280*w
+#define DEBUG_PIXEL_NR 10 + 10*w
 #define EPSILON 1e-10
 
 #include "RandomParameterFilter.h"
@@ -39,7 +39,8 @@
 #include "imageio.h"
 #include<boost/range/numeric.hpp>
 const int BOX_SIZE[] = { 55, 35, 17, 7 };
-const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f };
+const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f }; // for fast prototyping, by jklethinen
+//const float MAX_SAMPLES_FACTOR[] = { 0.5f, 0.5f, 0.5f, 0.5f }; // by sen
 int MAX_SAMPLES[4];
 
 RandomParameterFilter::RandomParameterFilter(const int width, const int height,
@@ -60,8 +61,7 @@ void RandomParameterFilter::Apply() {
 	ProgressReporter reporter(w*h*4, "Applying RPF filter");
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		if (DEBUG) fprintf(debugLog, "\n*** Starting pass number %d ***\n", iterStep);
-		//for (int pixel_nr = DEBUG_PIXEL_NR ; pixel_nr <= DEBUG_PIXEL_NR ; pixel_nr++) { //do only one pixel
-		for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
+		for (int pixel_nr = DEBUG_PIXEL_NR ; pixel_nr <= DEBUG_PIXEL_NR ; pixel_nr++) { //do only one pixel
 			const int pixel_idx = pixel_nr * spp;
 			vector<int> neighbourhoodIdxs;
 			vector<SampleData> neighbourhood = determineNeighbourhood(
@@ -204,7 +204,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 
 void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &beta,
 		float &W_r_c, vector<SampleData> &neighbourhood,int iterStep) {
-
+	MutualInformation mi;
 	// dependency for colors
 
 	vector<float> m_D_rk_c = vector<float>(SampleData::getRandomParametersSize());
@@ -216,15 +216,15 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 
 	for(int l=0; l < SampleData::getColorSize(); l++) {
 		for(int k=0; k < SampleData::getRandomParametersSize(); k++) {
-			m_D_rk_c[k] += MutualInformation::mutualinfo(neighbourhood,
+			m_D_rk_c[k] += mi.mutualinfo(neighbourhood,
 					l + SampleData::getColorOffset(), k + SampleData::getRandomParamsOffset());
 		}
 		for(int k=0; k < SampleData::getImgPosSize(); k++) {
-			m_D_pk_c[k] += MutualInformation::mutualinfo(neighbourhood,
+			m_D_pk_c[k] += mi.mutualinfo(neighbourhood,
 					l + SampleData::getColorOffset(), k + SampleData::getImgPosOffset());
 		}
 		for(int k=0; k < SampleData::getFeaturesSize(); k++) {
-			m_D_fk_c[k] += MutualInformation::mutualinfo(neighbourhood,
+			m_D_fk_c[k] += mi.mutualinfo(neighbourhood,
 					l + SampleData::getColorOffset(), k + SampleData::getFeaturesOffset());
 		}
 	}
@@ -239,11 +239,11 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 
 	for(int k = 0; k < SampleData::getFeaturesSize(); k++) {
 		for(int l = 0; l < SampleData::getRandomParametersSize(); l++) {
-			m_D_fk_rl[k][l] = MutualInformation::mutualinfo(neighbourhood,
+			m_D_fk_rl[k][l] = mi.mutualinfo(neighbourhood,
 					l + SampleData::getRandomParamsOffset(), k + SampleData::getFeaturesOffset());
 		}
 		for(int l=0; l < SampleData::getImgPosSize(); l++) {
-			m_D_fk_pl[k][l] = MutualInformation::mutualinfo(neighbourhood,
+			m_D_fk_pl[k][l] = mi.mutualinfo(neighbourhood,
 					l + SampleData::getImgPosOffset(), k + SampleData::getFeaturesOffset());
 		}
 		for(int l=0; l < SampleData::getColorSize(); l++) {
@@ -337,6 +337,10 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 		for (int j=0; j<3; j++) {
 			colorMeanAfter[j] += s.outputColors[j];
 		}
+	}
+
+	for (int j=0; j<3; j++) {
+		colorMeanAfter[j] /= spp;
 	}
 
 	// reinsert energy from HDR clamp
