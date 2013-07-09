@@ -61,6 +61,7 @@ void RandomParameterFilter::Apply() {
 	ProgressReporter reporter(w*h*4, "Applying RPF filter");
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		if (DEBUG) fprintf(debugLog, "\n*** Starting pass number %d ***\n", iterStep);
+#pragma omp parallel for num_threads(PbrtOptions.nCores)
 		for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
 			const int pixel_idx = pixel_nr * spp;
 			vector<int> neighbourhoodIdxs;
