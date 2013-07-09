@@ -39,7 +39,8 @@
 #include "imageio.h"
 #include<boost/range/numeric.hpp>
 const int BOX_SIZE[] = { 55, 35, 17, 7 };
-const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f };
+//const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f }; // for fast prototyping, by jklethinen
+const float MAX_SAMPLES_FACTOR[] = { 0.5f, 0.5f, 0.5f, 0.5f }; // by sen
 int MAX_SAMPLES[4];
 
 RandomParameterFilter::RandomParameterFilter(const int width, const int height,
@@ -60,7 +61,6 @@ void RandomParameterFilter::Apply() {
 	ProgressReporter reporter(w*h*4, "Applying RPF filter");
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		if (DEBUG) fprintf(debugLog, "\n*** Starting pass number %d ***\n", iterStep);
-		//for (int pixel_nr = DEBUG_PIXEL_NR ; pixel_nr <= DEBUG_PIXEL_NR ; pixel_nr++) { //do only one pixel
 		for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
 			const int pixel_idx = pixel_nr * spp;
 			vector<int> neighbourhoodIdxs;
@@ -337,6 +337,10 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 		for (int j=0; j<3; j++) {
 			colorMeanAfter[j] += s.outputColors[j];
 		}
+	}
+
+	for (int j=0; j<3; j++) {
+		colorMeanAfter[j] /= spp;
 	}
 
 	// reinsert energy from HDR clamp

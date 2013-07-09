@@ -14,7 +14,8 @@ Sampler "random"
 Renderer "samplerrenderer"
 # See sbf.cpp for the usage of built-in filters
 
-LookAt  15 2.5 4.3   -.261 -.031 1.252   0 0 1
+
+LookAt  25 2.5 4.3   -.261 -.031 1.252   0 0 1
 
 Camera "perspective"
     "float fov" [50.1343]
@@ -33,7 +34,7 @@ AttributeEnd
 
 # Light above
 AttributeBegin
-AreaLightSource "area" "color L" [50 50 50] # "integer nsamples" [4]
+AreaLightSource "area" "color L" [15 15 15] # "integer nsamples" [4]
 Rotate 180 1 0 0
 Translate 0 0 -20
 Shape "disk" "float radius" [4]
