@@ -46,11 +46,10 @@ int MAX_SAMPLES[4];
 
 RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 		const int spp, vector<SampleData> &allSamples) :
-	allSamples(allSamples) {
+	allSamples(allSamples), rng(RNG(42)) {
 	this->w = width;
 	this->h = height;
 	this->spp = spp;
-	this->rng = RNG(42);
 	this->debugLog = fopen("rpf.log", "w");
 	fprintf(debugLog, "Number of samples: %lu", allSamples.size());
 	for (int i = 0; i < 4; i++) {
@@ -209,6 +208,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 
 	// Normalization of neighbourhood
 	SampleData nMean, nMeanSquare, nStd;
+	nMean.reset(); nMeanSquare.reset();
 	for (int f = 0; f < SampleData::getLastNormalizedOffset(); f++) {
 		for (SampleData& s: neighbourhood) {
 			nMean[f] += s[f];
@@ -411,7 +411,7 @@ void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
 	}
 
 void RandomParameterFilter::getGaussian(float stddev, int meanX, int meanY,
-		int &x, int &y) {
+		int &x, int &y) const {
 	// Box-Muller method, adapted from @ jtlehtin's code.
 	float S, V1, V2;
 	do {
@@ -424,7 +424,7 @@ void RandomParameterFilter::getGaussian(float stddev, int meanX, int meanY,
 	y = sqrt(-2 * log(S) / S) * V2 * stddev + meanY;
 }
 
-SampleData& RandomParameterFilter::getRandomSampleAt(int x, int y, int &idx) {
+SampleData& RandomParameterFilter::getRandomSampleAt(const int x, int y, int &idx) {
 	idx = (x + y*w)*spp + (int)(spp*rng.RandomFloat());
 	return allSamples[idx];
 }

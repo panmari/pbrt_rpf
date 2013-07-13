@@ -55,7 +55,7 @@ private:
     int h, w, spp;
 	FILE *debugLog;
 	vector<SampleData> &allSamples;
-	RNG rng; //random generator
+	const RNG rng; //random generator
 
 	void preprocessSamples();
     vector<SampleData> determineNeighbourhood(const int boxsize, const int maxSamples, const int pixelIdx);
@@ -64,8 +64,8 @@ private:
     //some helpers
     inline float sqr(float a) {return a*a;};
     void getPixelMeanAndStd(int pixelIdx, SampleData &sampleMean, SampleData &sampleStd);
-    void getGaussian(float stddev, int meanX, int meanY, int &x, int &y);
-    SampleData& getRandomSampleAt(int x, int y, int &idx); //TODO: long for veeery big images?
+    void getGaussian(float stddev, int meanX, int meanY, int &x, int &y) const;
+    SampleData& getRandomSampleAt(const int x, const int y, int &idx); //TODO: long for veeery big images?
 };
 
 /**
