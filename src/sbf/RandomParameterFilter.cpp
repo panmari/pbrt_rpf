@@ -31,7 +31,7 @@
 #define DEBUG_PIXEL_NR 163 + 280*w
 #define EPSILON 1e-10
 #define JOUNI 0.01f
-#define REINSERT_ENERGY_HDR_CLAMP false
+#define REINSERT_ENERGY_HDR_CLAMP true
 #include "RandomParameterFilter.h"
 
 #include "fmath.hpp"
@@ -59,6 +59,9 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 }
 
 void RandomParameterFilter::Apply() {
+	// some preprocessing, cut back large
+	preprocessSamples();
+
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + std::to_string(iterStep + 1) + " of 4");
 		if (DEBUG) fprintf(debugLog, "\n*** Starting pass number %d ***\n", iterStep);
@@ -123,6 +126,29 @@ void RandomParameterFilter::Apply() {
 	}
 
 
+}
+
+/**
+ * Or something like this... probably I'd have to overwrite all features of pixelMean
+ */
+void RandomParameterFilter::preprocessSamples() {
+	for (uint pixelOffset = 0; pixelOffset < allSamples.size(); pixelOffset+= spp) {
+			SampleData pixelMean, pixelStd;
+			getPixelMeanAndStd(pixelOffset, pixelMean, pixelStd);
+			for (int sampleOffset = 0; sampleOffset < spp; sampleOffset++) {
+				SampleData &s = allSamples[pixelOffset + sampleOffset];
+				bool flag = false;
+				for (int i=0; i<3 && !flag; i++)
+					if (abs(s.rgb[i] - pixelMean.rgb[i]) > pixelStd.rgb[i]) {
+						flag = true;
+					}
+				if (flag) {
+					for (int i=0; i<3 && !flag; i++)
+						s.rgb[i] = s.inputColors[i] = pixelMean.rgb[i];
+				}
+
+			}
+		}
 }
 
 vector<SampleData> RandomParameterFilter::determineNeighbourhood(
