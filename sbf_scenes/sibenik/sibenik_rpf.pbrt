@@ -3,7 +3,7 @@ Scale -1 1 1
 Accelerator "bvh"
 
 Film "sbfimage"    
-    "integer xresolution"    [500] "integer yresolution" [500]
+    "integer xresolution"    [1000] "integer yresolution" [1000]
     "string filename"        ["sibenik_rpf.exr"]
     "bool dumpfeaturebuffer" ["true"]
     "string filter"          ["rpf"] # rpf-> Random Parameter Filter
@@ -15,7 +15,7 @@ Renderer "samplerrenderer"
 # See sbf.cpp for the usage of built-in filters
 
 
-LookAt  25 2.5 4.3   -.261 -.031 1.252   0 0 1
+LookAt  15 2.5 4.3   -.261 -.031 1.252   0 0 1
 
 Camera "perspective"
     "float fov" [50.1343]
