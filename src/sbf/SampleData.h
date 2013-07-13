@@ -3,7 +3,7 @@
 
 struct SampleData {
 
-	SampleData() {
+	void reset() {
 		for (int i = 0; i < 3; i++) {
 			rgb[i] = normal[i] = secondNormal[i] = rho[i] = secondOrigin[i] =
 					thirdOrigin[i] = inputColors[i] = outputColors[i] =

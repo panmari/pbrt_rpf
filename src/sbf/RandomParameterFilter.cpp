@@ -389,6 +389,7 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
 		SampleData &pixelMean, SampleData &pixelStd) {
 	SampleData pixelMeanSquare;
+	pixelMean.reset(); pixelStd.reset(); pixelMeanSquare.reset();
 	//set x and y separately
 	pixelMean.x = allSamples[pixelIdx].x;
 	pixelMean.y = allSamples[pixelIdx].y;
