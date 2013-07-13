@@ -179,7 +179,6 @@ float SBF::CalculateAvgSpp() const {
 void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
     Update(true);
 
-    printf("\nExpected %lu samples, got %ld \n", allSamples.size(), sampleCount);
     ProgressReporter reporter(1, "Dumping images");
     string filenameBase = filename.substr(0, filename.rfind("."));
     string filenameExt  = filename.substr(filename.rfind("."));

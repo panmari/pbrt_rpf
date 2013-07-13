@@ -31,6 +31,7 @@
 #define DEBUG_PIXEL_NR 163 + 280*w
 #define EPSILON 1e-10
 #define JOUNI 0.01f
+#define REINSERT_ENERGY_HDR_CLAMP false
 #include "RandomParameterFilter.h"
 
 #include "fmath.hpp"
@@ -58,8 +59,8 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 }
 
 void RandomParameterFilter::Apply() {
-	ProgressReporter reporter(w*h*4, "Applying RPF filter");
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
+		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + std::to_string(iterStep + 1) + " of 4");
 		if (DEBUG) fprintf(debugLog, "\n*** Starting pass number %d ***\n", iterStep);
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
 		for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
@@ -118,9 +119,10 @@ void RandomParameterFilter::Apply() {
 				s.inputColors[k] = s.outputColors[k];
 			}
 		}
+		reporter.Done();
 	}
 
-	reporter.Done();
+
 }
 
 vector<SampleData> RandomParameterFilter::determineNeighbourhood(
@@ -308,7 +310,7 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 	}
 	// HDR Clamp
 	float colorMean[3], colorMeanSquare[3], colorStd[3], colorMeanAfter[3];;
-	for (int i=0; i<3; i++) { colorMean[i] = colorMeanSquare[i] = colorStd[i] = colorMeanAfter[i] = 0.f; }
+	for (int i=0; i<3; i++) { colorMean[i] = colorMeanSquare[i] = colorMeanAfter[i] = 0.f; }
 	for (int i=0; i<spp; i++) {
 		SampleData &s = allSamples[pixelIdx + i];
 		for(int j=0; j<3; j++) {
@@ -336,17 +338,19 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 		}
 	}
 
-	for (int j=0; j<3; j++) {
-		colorMeanAfter[j] /= spp;
-	}
-
-	// reinsert energy from HDR clamp
-	float lostEnergyPerSample[3];
-	for (int i=0; i<3; i++) { lostEnergyPerSample[i] = colorMean[i] - colorMeanAfter[i]; }
-	for (int i=0; i<spp; i++) {
-		SampleData &s = allSamples[pixelIdx + i];
+	if (REINSERT_ENERGY_HDR_CLAMP) {
 		for (int j=0; j<3; j++) {
-			s.outputColors[j] += lostEnergyPerSample[j];
+			colorMeanAfter[j] /= spp;
+		}
+
+		// reinsert energy from HDR clamp
+		float lostEnergyPerSample[3];
+		for (int i=0; i<3; i++) { lostEnergyPerSample[i] = colorMean[i] - colorMeanAfter[i]; }
+		for (int i=0; i<spp; i++) {
+			SampleData &s = allSamples[pixelIdx + i];
+			for (int j=0; j<3; j++) {
+				s.outputColors[j] += lostEnergyPerSample[j];
+			}
 		}
 	}
 }
