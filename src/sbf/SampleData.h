@@ -2,16 +2,17 @@
 #define SAMPLE_DATA_H
 
 struct SampleData {
-	/*//not really needed
+
 	SampleData() {
 		for (int i = 0; i < 3; i++) {
 			rgb[i] = normal[i] = secondNormal[i] = rho[i] = secondOrigin[i] =
-					thirdOrigin[i] = inputColors[i] = outputColors[i] = 0.f;
+					thirdOrigin[i] = inputColors[i] = outputColors[i] =
+					firstReflectionDir[i] = 0.f;
 		}
 		lensPos[0] = lensPos[1] = time = 0.f;
 		x = y = 0;
 	}
-	*/
+
 	// position features (the first 6 values)
 	float secondOrigin[3];  //0, 1, 2
 	float thirdOrigin[3];	//3, 4, 5
@@ -41,8 +42,8 @@ struct SampleData {
 	static int getColorSize()				{ return 3; }
 	static int getImgPosOffset()			{ return 18; }
 	static int getImgPosSize()				{ return 2; }
-	static int getRandomParamsOffset()		{ return 23; }
-	static int getRandomParametersSize()	{ return 2; }
+	static int getRandomParamsOffset()		{ return 20; }
+	static int getRandomParametersSize()	{ return 5; }
 	static int getLastNormalizedOffset()	{ return 25; } //this should mark the last used parameter
 	void   operator+=(const SampleData& s)	{ for(int i=0;i<getSize();i++) (*this)[i] += s[i]; }
 	void   divide(int s)					{ for(int i=0;i<getSize();i++) (*this)[i] /= float(s); }
