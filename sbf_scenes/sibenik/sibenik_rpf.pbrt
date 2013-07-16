@@ -8,7 +8,8 @@ Film "sbfimage"
     "bool dumpfeaturebuffer" ["false"]
     "string filter"          ["rpf"] # rpf-> Random Parameter Filter
 
-Sampler "lowdiscrepancy" "integer pixelsamples" [8]
+#Sampler "lowdiscrepancy" "integer pixelsamples" [8]
+Sampler "random" "integer pixelsamples" [8]
 SurfaceIntegrator "path" "integer maxdepth" [1]
 
 Renderer "samplerrenderer"

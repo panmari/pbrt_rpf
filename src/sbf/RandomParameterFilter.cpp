@@ -32,7 +32,7 @@
 #define DEBUG_PIXEL_NR 163 + 280*w
 
 //TODO: make this configurable in scene file
-#define JOUNI 0.01f
+#define JOUNI 0.1f
 
 //some parameters that should stay true for most things
 #define CROP_BOX true
@@ -51,6 +51,7 @@
 #include<boost/range/numeric.hpp>
 const int BOX_SIZE[] = { 55, 35, 17, 7 };
 const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f }; // for fast prototyping, by jklethinen
+//const float MAX_SAMPLES_FACTOR[] = { 0.1f, 0.2f, 0.3f, 0.5f }; // by me
 //const float MAX_SAMPLES_FACTOR[] = { 0.5f, 0.5f, 0.5f, 0.5f }; // by sen
 int MAX_SAMPLES[4];
 
@@ -65,7 +66,6 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 	for (int i = 0; i < 4; i++) {
 		MAX_SAMPLES[i] = pow(BOX_SIZE[i], 2) * spp * MAX_SAMPLES_FACTOR[0];
 	}
-
 }
 
 void RandomParameterFilter::Apply() {
@@ -104,28 +104,11 @@ void RandomParameterFilter::Apply() {
 			}
 			filterColorSamples(alpha, beta, W_r_c, neighbourhood, pixel_idx);
 
-			if (pixel_nr % 10*w == 0) {
-				reporter.Update(w);
+			if (pixel_nr % (20*w) == 0) {
+				reporter.Update(20*w);
 			}
 		}
 
-		//TODO: make this work
-		/*
-		if (DEBUG) { //print result of this iteration
-			TwoDArray<Color> iteration_img = TwoDArray<Color>(w, h);
-			for (uint i=0; i < allSamples.size(); i+=spp) {
-				Color c;
-				for (int j=0; j<spp; j++)
-					for(int k=0; k<3;k++){
-						c[k] += allSamples[i+j].inputColors[k];
-					}
-				c /= spp;
-				iteration_img(allSamples[i].x, allSamples[i].y) = c;
-			}
-		    WriteImage("iter" + std::to_string(iterStep) + "_sbf_img.exr", (float*)iteration_img.GetRawPtr(), NULL,
-		    		w, h, 0,0,0,0);
-		}
-		*/
 		//write output to input
 		for (SampleData &s: allSamples) {
 			for (int k=0; k<3; k++) {
@@ -196,7 +179,6 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 			if( fabs(sample[f] - pixelMean[f]) > lim*pixelStd[f] &&
 					(fabs(sample[f] - pixelMean[f]) > 0.1f || pixelStd[f] > 0.1f)) {
 				flag = false;
-				//printf(" rejected!");
 			}
 		}
 
