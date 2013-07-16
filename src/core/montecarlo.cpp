@@ -232,6 +232,8 @@ void LDPixelSample(int xPos, int yPos, float shutterOpen,
 
     // Initialize _samples_ with computed sample values
     for (int i = 0; i < nPixelSamples; ++i) {
+    	samples[i].x = xPos;
+    	samples[i].y = yPos;
         samples[i].imageX = xPos + imageSamples[2*i];
         samples[i].imageY = yPos + imageSamples[2*i+1];
         samples[i].time = Lerp(timeSamples[i], shutterOpen, shutterClose);
