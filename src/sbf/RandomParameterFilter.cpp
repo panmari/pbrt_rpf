@@ -27,12 +27,21 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  */
+//debugging stuff
 #define DEBUG false
 #define DEBUG_PIXEL_NR 163 + 280*w
-#define EPSILON 1e-10
-#define CROP_BOX false
+
+//TODO: make this configurable in scene file
 #define JOUNI 0.01f
+
+//some parameters that should stay true for most things
+#define CROP_BOX true
+#define HDR_CLAMP true
 #define REINSERT_ENERGY_HDR_CLAMP true
+
+//used to prevent div by zero
+#define EPSILON 1e-10
+
 #include "RandomParameterFilter.h"
 
 #include "fmath.hpp"
@@ -56,6 +65,7 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 	for (int i = 0; i < 4; i++) {
 		MAX_SAMPLES[i] = pow(BOX_SIZE[i], 2) * spp * MAX_SAMPLES_FACTOR[0];
 	}
+
 }
 
 void RandomParameterFilter::Apply() {
@@ -94,7 +104,7 @@ void RandomParameterFilter::Apply() {
 			}
 			filterColorSamples(alpha, beta, W_r_c, neighbourhood, pixel_idx);
 
-			if (pixel_nr % w == 0) {
+			if (pixel_nr % 10*w == 0) {
 				reporter.Update(w);
 			}
 		}
@@ -340,48 +350,50 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 			if (DEBUG) fprintf(debugLog, "%-.3f, %-.3f\n", s.inputColors[k], s.outputColors[k]);
 		}
 	}
-	// HDR Clamp
-	float colorMean[3], colorMeanSquare[3], colorStd[3], colorMeanAfter[3];;
-	for (int i=0; i<3; i++) { colorMean[i] = colorMeanSquare[i] = colorMeanAfter[i] = 0.f; }
-	for (int i=0; i<spp; i++) {
-		SampleData &s = allSamples[pixelIdx + i];
-		for(int j=0; j<3; j++) {
-			colorMean[j] += s.outputColors[j];
-			colorMeanSquare[j] += sqr(s.outputColors[j]);
-		}
-	}
-	for (int i=0; i<3; i++) {
-		colorMean[i] /= spp;
-		colorMeanSquare[i] /= spp;
-		colorStd[i] = sqrt(max(0.f, colorMeanSquare[i] - sqr(colorMean[i])));
-	}
-#define STD_FACTOR 1
-	for (int i=0; i<spp; i++) {
-		SampleData &s = allSamples[pixelIdx + i];
-		if( fabs(s.outputColors[0] - colorMean[0]) > STD_FACTOR*colorStd[0] ||
-			fabs(s.outputColors[1] - colorMean[1]) > STD_FACTOR*colorStd[1] ||
-			fabs(s.outputColors[2] - colorMean[2]) > STD_FACTOR*colorStd[2]) {
-			for (int j=0; j<3;j++) {
-				s.outputColors[j] = colorMean[j];
-			}
-		}
-		for (int j=0; j<3; j++) {
-			colorMeanAfter[j] += s.outputColors[j];
-		}
-	}
 
-	if (REINSERT_ENERGY_HDR_CLAMP) {
-		for (int j=0; j<3; j++) {
-			colorMeanAfter[j] /= spp;
-		}
-
-		// reinsert energy from HDR clamp
-		float lostEnergyPerSample[3];
-		for (int i=0; i<3; i++) { lostEnergyPerSample[i] = colorMean[i] - colorMeanAfter[i]; }
+	if (HDR_CLAMP) {
+		float colorMean[3], colorMeanSquare[3], colorStd[3], colorMeanAfter[3];;
+		for (int i=0; i<3; i++) { colorMean[i] = colorMeanSquare[i] = colorMeanAfter[i] = 0.f; }
 		for (int i=0; i<spp; i++) {
 			SampleData &s = allSamples[pixelIdx + i];
+			for(int j=0; j<3; j++) {
+				colorMean[j] += s.outputColors[j];
+				colorMeanSquare[j] += sqr(s.outputColors[j]);
+			}
+		}
+		for (int i=0; i<3; i++) {
+			colorMean[i] /= spp;
+			colorMeanSquare[i] /= spp;
+			colorStd[i] = sqrt(max(0.f, colorMeanSquare[i] - sqr(colorMean[i])));
+		}
+	#define STD_FACTOR 1
+		for (int i=0; i<spp; i++) {
+			SampleData &s = allSamples[pixelIdx + i];
+			if( fabs(s.outputColors[0] - colorMean[0]) > STD_FACTOR*colorStd[0] ||
+				fabs(s.outputColors[1] - colorMean[1]) > STD_FACTOR*colorStd[1] ||
+				fabs(s.outputColors[2] - colorMean[2]) > STD_FACTOR*colorStd[2]) {
+				for (int j=0; j<3;j++) {
+					s.outputColors[j] = colorMean[j];
+				}
+			}
 			for (int j=0; j<3; j++) {
-				s.outputColors[j] += lostEnergyPerSample[j];
+				colorMeanAfter[j] += s.outputColors[j];
+			}
+		}
+
+		if (REINSERT_ENERGY_HDR_CLAMP) {
+			for (int j=0; j<3; j++) {
+				colorMeanAfter[j] /= spp;
+			}
+
+			// reinsert energy from HDR clamp
+			float lostEnergyPerSample[3];
+			for (int i=0; i<3; i++) { lostEnergyPerSample[i] = colorMean[i] - colorMeanAfter[i]; }
+			for (int i=0; i<spp; i++) {
+				SampleData &s = allSamples[pixelIdx + i];
+				for (int j=0; j<3; j++) {
+					s.outputColors[j] += lostEnergyPerSample[j];
+				}
 			}
 		}
 	}
