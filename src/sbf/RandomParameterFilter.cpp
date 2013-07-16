@@ -30,6 +30,7 @@
 #define DEBUG false
 #define DEBUG_PIXEL_NR 163 + 280*w
 #define EPSILON 1e-10
+#define CROP_BOX false
 #define JOUNI 0.01f
 #define REINSERT_ENERGY_HDR_CLAMP true
 #include "RandomParameterFilter.h"
@@ -59,7 +60,7 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 
 void RandomParameterFilter::Apply() {
 	// some preprocessing, cut back large
-	preprocessSamples();
+	//preprocessSamples();
 
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + std::to_string(iterStep + 1) + " of 4");
@@ -168,8 +169,13 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		int x, y, idx;
 		//retry, as long as its not in picture or original pixel
 		do {
-			getGaussian(stdv, pixelMean.x, pixelMean.y, x, y);
-		} while(x == pixelMean.x || y == pixelMean.y || x < 0 || y < 0 || x >= w || y >= h);
+			getGaussian(stdv, x, y);
+			if (CROP_BOX && (abs(x) >= boxsize/2.f || abs(y) >= boxsize/2.f))		// get only pixels inside of 'box'
+				continue;
+			x += pixelMean.x;
+			y += pixelMean.y;
+		} while(x == pixelMean.x || y == pixelMean.y || 			// can not be sampe pixel
+				x < 0 || y < 0 || x >= w || y >= h);				// or outside of image
 		SampleData &sample = getRandomSampleAt(x, y, idx);
 		// to check if sample from right location was retrieved
 		//if (DEBUG) { fprintf(debugLog, "[%d,%d vs %d,%d]", x, y, sample.x, sample.y); }
@@ -410,8 +416,7 @@ void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
 		}
 	}
 
-void RandomParameterFilter::getGaussian(float stddev, int meanX, int meanY,
-		int &x, int &y) const {
+void RandomParameterFilter::getGaussian(float stddev, int &x, int &y) const {
 	// Box-Muller method, adapted from @ jtlehtin's code.
 	float S, V1, V2;
 	do {
@@ -420,8 +425,8 @@ void RandomParameterFilter::getGaussian(float stddev, int meanX, int meanY,
 		S = V1 * V1 + V2 * V2;
 	} while (S >= 1);
 
-	x = sqrt(-2 * log(S) / S) * V1 * stddev + meanX;
-	y = sqrt(-2 * log(S) / S) * V2 * stddev + meanY;
+	x = sqrt(-2 * log(S) / S) * V1 * stddev;
+	y = sqrt(-2 * log(S) / S) * V2 * stddev;
 }
 
 SampleData& RandomParameterFilter::getRandomSampleAt(const int x, int y, int &idx) {

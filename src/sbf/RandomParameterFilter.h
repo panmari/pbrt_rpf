@@ -64,7 +64,7 @@ private:
     //some helpers
     inline float sqr(float a) {return a*a;};
     void getPixelMeanAndStd(int pixelIdx, SampleData &sampleMean, SampleData &sampleStd);
-    void getGaussian(float stddev, int meanX, int meanY, int &x, int &y) const;
+    void getGaussian(float stddev, int &x, int &y) const;
     SampleData& getRandomSampleAt(const int x, const int y, int &idx); //TODO: long for veeery big images?
 };
 
@@ -75,7 +75,7 @@ private:
 #define NR_BUCKETS 5
 class MutualInformation {
 public:
-	float mutualinfo(vector<SampleData> &neighbourhood, int firstChannel, int secondChannel) {
+	float mutualinfo(vector<SampleData> &neighbourhood, const int firstChannel, const int secondChannel) {
 		clearHistograms();
 		for (SampleData& s: neighbourhood) {
 			int a = quantize(s[firstChannel]);
