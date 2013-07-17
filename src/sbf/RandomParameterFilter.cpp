@@ -28,11 +28,11 @@
 
  */
 //debugging stuff
-#define DEBUG false
-#define DEBUG_PIXEL_NR 163 + 280*w
+#define DEBUG true
+#define DEBUG_PIXEL_NR 500 + 500*w
 
 //TODO: make this configurable in scene file
-#define JOUNI 0.1f
+#define JOUNI 0.2f
 
 //some parameters that should stay true for most things
 #define CROP_BOX true
@@ -75,7 +75,11 @@ void RandomParameterFilter::Apply() {
 		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + std::to_string(iterStep + 1) + " of 4");
 		if (DEBUG) fprintf(debugLog, "\n*** Starting pass number %d ***\n", iterStep);
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
+#if DEBUG
+		for (int pixel_nr = DEBUG_PIXEL_NR; pixel_nr <= DEBUG_PIXEL_NR; pixel_nr++) {
+#else
 		for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
+#endif
 			const int pixel_idx = pixel_nr * spp;
 			vector<SampleData> neighbourhood = determineNeighbourhood(BOX_SIZE[iterStep], MAX_SAMPLES[iterStep], pixel_idx);
 
@@ -108,8 +112,7 @@ void RandomParameterFilter::Apply() {
 			}
 		}
 
-		//write output to input (might be faster non-parallelized)
-//#pragma omp parallel for num_threads(PbrtOptions.nCores)
+		//write output to input
 		for (SampleData &s: allSamples) {
 			for (int k=0; k<3; k++) {
 				s.inputColors[k] = s.outputColors[k];
@@ -412,7 +415,7 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
 		SampleData &pixelMean, SampleData &pixelStd) {
 	SampleData pixelMeanSquare;
-	pixelMean.reset(); pixelStd.reset(); pixelMeanSquare.reset();
+	pixelMean.reset(); pixelMeanSquare.reset();
 	//set x and y separately
 	pixelMean.x = allSamples[pixelIdx].x;
 	pixelMean.y = allSamples[pixelIdx].y;
