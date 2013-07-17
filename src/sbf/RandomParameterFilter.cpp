@@ -69,8 +69,7 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 }
 
 void RandomParameterFilter::Apply() {
-	// some preprocessing, cut back large
-	//preprocessSamples();
+	preprocessSamples();
 
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + std::to_string(iterStep + 1) + " of 4");
@@ -109,7 +108,8 @@ void RandomParameterFilter::Apply() {
 			}
 		}
 
-		//write output to input
+		//write output to input (might be faster non-parallelized)
+//#pragma omp parallel for num_threads(PbrtOptions.nCores)
 		for (SampleData &s: allSamples) {
 			for (int k=0; k<3; k++) {
 				s.inputColors[k] = s.outputColors[k];
@@ -125,23 +125,46 @@ void RandomParameterFilter::Apply() {
  * Or something like this... probably I'd have to overwrite all features of pixelMean
  */
 void RandomParameterFilter::preprocessSamples() {
+	printf("Preprocessing... \n");
 	for (uint pixelOffset = 0; pixelOffset < allSamples.size(); pixelOffset+= spp) {
-			SampleData pixelMean, pixelStd;
-			getPixelMeanAndStd(pixelOffset, pixelMean, pixelStd);
-			for (int sampleOffset = 0; sampleOffset < spp; sampleOffset++) {
-				SampleData &s = allSamples[pixelOffset + sampleOffset];
-				bool flag = false;
-				for (int i=0; i<3 && !flag; i++)
-					if (abs(s.rgb[i] - pixelMean.rgb[i]) > pixelStd.rgb[i]) {
-						flag = true;
-					}
-				if (flag) {
-					for (int i=0; i<3 && !flag; i++)
-						s.rgb[i] = s.inputColors[i] = pixelMean.rgb[i];
+		SampleData pixelValidSamplesMean;
+		pixelValidSamplesMean.reset();
+		vector<uint> validSamplesIdx, invalidSamplesIdx;
+		for (int sampleOffset = 0; sampleOffset < spp; sampleOffset++) {
+			uint idx = pixelOffset + sampleOffset;
+			SampleData &s = allSamples[idx];
+			bool valid = true;
+			for (int f=0; f < 6; f++) {
+				if (s[f] > 1e10f) {
+					valid = false;
+					break;
 				}
-
+			}
+			if (valid) {
+				pixelValidSamplesMean += s;
+				validSamplesIdx.push_back(idx);
+			} else {
+				invalidSamplesIdx.push_back(idx);
 			}
 		}
+		pixelValidSamplesMean.divide(validSamplesIdx.size());
+		if (validSamplesIdx.size() < spp)
+			printf("Pixel has only %lu valid samples", validSamplesIdx.size());
+		for (uint invalidSampleIdx: invalidSamplesIdx) {
+			//replace invalid sample with random valid sample from same pixel
+			SampleData &s = allSamples[invalidSampleIdx];
+			int replaceIdx = (int) (rng.RandomFloat()*validSamplesIdx.size());
+			SampleData &s2 = allSamples[validSamplesIdx[replaceIdx]];
+			s = s2;
+			//put radiance to black of overwritten sample
+			for (int i = 0; i < 3; i++) {
+				s.rgb[i] = 0;
+				s.inputColors[i] = 0;
+				s.outputColors[i] = 0;
+			}
+		}
+	}
+	printf("Done! \n");
 }
 
 vector<SampleData> RandomParameterFilter::determineNeighbourhood(
