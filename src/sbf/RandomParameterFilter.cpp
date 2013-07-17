@@ -64,7 +64,7 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 	this->debugLog = fopen("rpf.log", "w");
 	fprintf(debugLog, "Number of samples: %lu", allSamples.size());
 	for (int i = 0; i < 4; i++) {
-		MAX_SAMPLES[i] = pow(BOX_SIZE[i], 2) * spp * MAX_SAMPLES_FACTOR[0];
+		MAX_SAMPLES[i] = sqr(BOX_SIZE[i]) * spp * MAX_SAMPLES_FACTOR[0];
 	}
 }
 
@@ -236,16 +236,16 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	for (int f = 0; f < SampleData::getLastNormalizedOffset(); f++) {
 		for (SampleData& s: neighbourhood) {
 			nMean[f] += s[f];
-			nMeanSquare[f] += s[f]*s[f];
+			nMeanSquare[f] += sqr(s[f]);
 		}
 		nMean[f] /= neighbourhood.size();
 		nMeanSquare[f] /= neighbourhood.size();
-		nStd[f] = sqrt(max(0.f,nMeanSquare[f] - nMean[f]*nMean[f]));
+		nStd[f] = sqrt(max(0.f,nMeanSquare[f] - sqr(nMean[f])));
 	}
 	for (SampleData& s: neighbourhood) {
 		for (int f = 0; f < SampleData::getLastNormalizedOffset(); f++) {
 			//todo: could optimize this to not divide if std is 0
-			s[f] = (s[f] - nMean[f])/(EPSILON + nStd[f]);
+			s[f] = (s[f] - nMean[f])*rcp(nStd[f]);
 		}
 	}
 	return neighbourhood;
@@ -304,7 +304,7 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 	const float D_f_c = boost::accumulate(m_D_fk_c, 0.f);
 	const float D_a_c = D_r_c + D_p_c + D_f_c;
 
-	W_r_c = D_r_c /(D_r_c + D_p_c + EPSILON);
+	W_r_c = D_r_c*rcp(D_r_c + D_p_c);
 
 	// set alpha for every channel to the same value
 	std::fill(alpha.begin(), alpha.end(), max(1 - (1 + 0.1f*iterStep)*W_r_c, 0.f));
@@ -314,8 +314,8 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 		const float D_fk_p = boost::accumulate(m_D_fk_pl[k], 0.f);
 		const float D_fk_c = boost::accumulate(m_D_fk_cl[k], 0.f);
 
-		const float W_fk_r = D_fk_r / (D_fk_r + D_fk_p + EPSILON);
-		const float W_fk_c = D_fk_c / (D_a_c + EPSILON);
+		const float W_fk_r = D_fk_r * rcp(D_fk_r + D_fk_p);
+		const float W_fk_c = D_fk_c * rcp(D_a_c);
 
 		beta[k] = W_fk_c * max(1-(1+0.1f*iterStep)*W_fk_r, 0.f);
 	}
