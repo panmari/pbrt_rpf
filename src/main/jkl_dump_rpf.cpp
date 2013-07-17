@@ -31,7 +31,7 @@ void readDump(char** argv, vector<SampleData> &allSamples, int &w, int &h, int &
 	if(!separateHeader)
 		fph = fp;
 
-	printf("Importing sample buffer... ");
+	printf("Importing sample buffer, ");
 
 	// Parse version and image size.
 
@@ -39,7 +39,7 @@ void readDump(char** argv, vector<SampleData> &allSamples, int &w, int &h, int &
 	fscanf(fph, "Width %d\n", &m_width);
 	fscanf(fph, "Height %d\n", &m_height);
 	fscanf(fph, "Samples per pixel %d\n", &m_numSamplesPerPixel);
-	printf(" Version: %.1f, size: %dx%d, spp: %d \n", m_version, m_width, m_height, m_numSamplesPerPixel);
+	printf(" Version: %.1f, size: %dx%d, spp: %d ... ", m_version, m_width, m_height, m_numSamplesPerPixel);
 	allSamples.resize(m_width*m_height*m_numSamplesPerPixel);
 	w = m_width;
 	h = m_height;
@@ -93,10 +93,6 @@ void readDump(char** argv, vector<SampleData> &allSamples, int &w, int &h, int &
 	if(separateHeader)
 		fclose(fph);
 	printf("done\n");
-	SampleData &s = allSamples[(500*m_width + 500)*m_numSamplesPerPixel + 2];
-	for (int f=0; f<SampleData::getLastNormalizedOffset(); f++)
-		printf("%-.3f \n", s[f]);
-	printf("pos: %d, %d \n", s.x, s.y);
 }
 
 int main(int argc, char** argv)
