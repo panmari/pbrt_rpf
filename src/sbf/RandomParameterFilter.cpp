@@ -28,8 +28,9 @@
 
  */
 //debugging stuff
-#define DEBUG true
-#define DEBUG_PIXEL_NR 500 + 500*w
+#define DEBUG false
+// of the form x + y*w
+#define DEBUG_PIXEL_NR 500 + 900*w
 
 //TODO: make this configurable in scene file
 #define JOUNI 0.2f
@@ -64,7 +65,7 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 	this->debugLog = fopen("rpf.log", "w");
 	fprintf(debugLog, "Number of samples: %lu", allSamples.size());
 	for (int i = 0; i < 4; i++) {
-		MAX_SAMPLES[i] = pow(BOX_SIZE[i], 2) * spp * MAX_SAMPLES_FACTOR[0];
+		MAX_SAMPLES[i] = sqr(BOX_SIZE[i]) * spp * MAX_SAMPLES_FACTOR[i];
 	}
 }
 
@@ -236,11 +237,11 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	for (int f = 0; f < SampleData::getLastNormalizedOffset(); f++) {
 		for (SampleData& s: neighbourhood) {
 			nMean[f] += s[f];
-			nMeanSquare[f] += s[f]*s[f];
+			nMeanSquare[f] += sqr(s[f]);
 		}
 		nMean[f] /= neighbourhood.size();
 		nMeanSquare[f] /= neighbourhood.size();
-		nStd[f] = sqrt(max(0.f,nMeanSquare[f] - nMean[f]*nMean[f]));
+		nStd[f] = sqrt(max(0.f,nMeanSquare[f] - sqr(nMean[f])));
 	}
 	for (SampleData& s: neighbourhood) {
 		for (int f = 0; f < SampleData::getLastNormalizedOffset(); f++) {
