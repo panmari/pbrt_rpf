@@ -148,8 +148,8 @@ void RandomParameterFilter::preprocessSamples() {
 			}
 		}
 		pixelValidSamplesMean.divide(validSamplesIdx.size());
-		if (validSamplesIdx.size() < spp)
-			printf("Pixel has only %lu valid samples", validSamplesIdx.size());
+		if (validSamplesIdx.size() < spp/2)
+			printf("Pixel has only %lu valid samples \n", validSamplesIdx.size());
 		for (uint invalidSampleIdx: invalidSamplesIdx) {
 			//replace invalid sample with random valid sample from same pixel
 			SampleData &s = allSamples[invalidSampleIdx];
