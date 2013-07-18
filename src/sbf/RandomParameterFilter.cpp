@@ -29,7 +29,7 @@
  */
 //debugging stuff
 #define DEBUG false
-#define DEBUG_PIXEL_NR 500 + 900*w
+#define DEBUG_PIXEL_NR 200 + 200*w
 #define DUMP_INTERMEDIATE_RESULTS true
 
 //TODO: make this configurable in scene file
@@ -179,20 +179,30 @@ void RandomParameterFilter::preprocessSamples() {
 				invalidSamplesIdx.push_back(idx);
 			}
 		}
-		pixelValidSamplesMean.divide(validSamplesIdx.size());
+		if (validSamplesIdx.size() > 0)
+			pixelValidSamplesMean.divide(validSamplesIdx.size());
 		if (validSamplesIdx.size() < spp/2)
 			printf("Pixel has only %lu valid samples \n", validSamplesIdx.size());
 		for (uint invalidSampleIdx: invalidSamplesIdx) {
-			//replace invalid sample with random valid sample from same pixel
 			SampleData &s = allSamples[invalidSampleIdx];
-			int replaceIdx = (int) (rng.RandomFloat()*validSamplesIdx.size());
-			SampleData &s2 = allSamples[validSamplesIdx[replaceIdx]];
-			s = s2;
-			//put radiance to black of overwritten sample
-			for (int i = 0; i < 3; i++) {
-				s.rgb[i] = 0;
-				s.inputColors[i] = 0;
-				s.outputColors[i] = 0;
+			if (validSamplesIdx.size() > 0) {
+				//replace invalid sample with random valid sample from same pixel
+				int replaceIdx = (int) (rng.RandomFloat()*validSamplesIdx.size());
+				SampleData &s2 = allSamples[validSamplesIdx[replaceIdx]];
+				s = s2;
+				//put radiance to black of overwritten sample
+				for (int i = 0; i < 3; i++) {
+					s.rgb[i] = 0;
+					s.inputColors[i] = 0;
+					s.outputColors[i] = 0;
+				}
+			}
+			else {
+				const SampleData &invS = allSamples[invalidSampleIdx[0]];
+				s = pixelValidSamplesMean; //set everything to 0 basically
+				//take x and y from an invalid sample, so it doesn't intefere with [0,0]
+				s.x = invS.x;
+				s.y = invS.y;
 			}
 		}
 	}
