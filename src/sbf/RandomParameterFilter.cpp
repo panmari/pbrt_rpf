@@ -28,8 +28,9 @@
 
  */
 //debugging stuff
-#define DEBUG true
+#define DEBUG false
 #define DEBUG_PIXEL_NR 500 + 900*w
+#define DUMP_INTERMEDIATE_RESULTS true
 
 //TODO: make this configurable in scene file
 #define JOUNI 0.02f
@@ -74,7 +75,7 @@ void RandomParameterFilter::Apply() {
 	preprocessSamples();
 
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
-		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + std::to_string(iterStep + 1) + " of 4");
+		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + to_string(iterStep + 1) + " of 4");
 		if (DEBUG) fprintf(debugLog, "\n*** Starting pass number %d ***\n", iterStep);
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
 #if DEBUG
@@ -120,10 +121,36 @@ void RandomParameterFilter::Apply() {
 				s.inputColors[k] = s.outputColors[k];
 			}
 		}
+
 		reporter.Done();
+		if (DUMP_INTERMEDIATE_RESULTS)
+			dumpIntermediateResults(iterStep);
 	}
 
 
+}
+
+void RandomParameterFilter::dumpIntermediateResults(int iterStep) {
+	TwoDArray<Color> fltImg = TwoDArray<Color>(w, h);
+	TwoDArray<Color> rhoImg = TwoDArray<Color>(w, h);
+	// Dumping img (and multiply with rho/albedo
+	for (uint i=0; i < allSamples.size(); i+=spp) {
+		Color c;
+		Color rho;
+		for (int j=0; j<spp; j++)
+			for(int k=0; k<3;k++){
+				c[k] += allSamples[i+j].outputColors[k]*allSamples[i+j].rho[k];
+				rho[k] += allSamples[i+j].rho[k];
+			}
+		c /= spp;
+		rho /= spp;
+		fltImg(allSamples[i].x, allSamples[i].y) = c;
+		rhoImg(allSamples[i].x, allSamples[i].y) = rho;
+	}
+	::WriteImage("pass" + to_string(iterStep+1) + ".exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
+					 w, h, 0, 0);
+	::WriteImage("pass" + to_string(iterStep+1) + "_rho.exr", (float*)rhoImg.GetRawPtr(), NULL, w, h,
+						 w, h, 0, 0);
 }
 
 /**

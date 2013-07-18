@@ -119,7 +119,6 @@ int main(int argc, char** argv)
     }
     ::WriteImage("test.exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
                      w, h, 0, 0);
-   // SBF::WriteImage(string(argv[1]) + "_sbf_img.exr", fltImg, w, h);
 
     return 0;
 }

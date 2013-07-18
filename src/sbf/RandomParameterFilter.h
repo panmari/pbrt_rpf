@@ -58,6 +58,7 @@ private:
 	const RNG rng; //random generator
 
 	void preprocessSamples();
+	void dumpIntermediateResults(int iterStep);
     vector<SampleData> determineNeighbourhood(const int boxsize, const int maxSamples, const int pixelIdx);
     void computeWeights(vector<float> &alpha, vector<float> &beta, float &W_r_c, vector<SampleData> &neighbourhood,int iterStep);
     void filterColorSamples(vector<float> &alpha, vector<float> &beta, float W_r_c, vector<SampleData> &neighbourhood, int currentPixelIdx);
