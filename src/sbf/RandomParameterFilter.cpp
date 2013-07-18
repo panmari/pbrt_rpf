@@ -198,7 +198,7 @@ void RandomParameterFilter::preprocessSamples() {
 				}
 			}
 			else {
-				const SampleData &invS = allSamples[invalidSampleIdx[0]];
+				const SampleData &invS = allSamples[invalidSamplesIdx[0]];
 				s = pixelValidSamplesMean; //set everything to 0 basically
 				//take x and y from an invalid sample, so it doesn't intefere with [0,0]
 				s.x = invS.x;
