@@ -17,6 +17,8 @@
 
 using namespace std;
 
+inline float sqr(float a) {return a*a;};
+
 void readDump(char** argv, vector<SampleData> &allSamples, int &w, int &h, int &spp) {
 	string filename(argv[1]);
 	int	m_width, m_height, m_numSamplesPerPixel;
@@ -95,6 +97,60 @@ void readDump(char** argv, vector<SampleData> &allSamples, int &w, int &h, int &
 	printf("done\n");
 }
 
+/**
+ * Dumps from jkl contain geometric normals, we need smooth ones here.
+ */
+void smoothNormals(vector<SampleData> &allSamples, const int w, const int h, const int spp) {
+	int fw = 5;
+	int fr = fw/2;
+
+	//TODO: this probably doesnt everythin correctly
+	printf("Smoothing normals... \n");
+	for(SampleData &s: allSamples) {
+		float smoothNormal[3];
+		int sampleCount = 0;
+		for(int dx=-fr;dx<=fr;dx++)
+		for(int dy=-fr;dy<=fr;dy++)
+		{
+			const int sx = s.x+dx;
+			const int sy = s.y+dy;
+			if(sx<0 || sy<0 || sx>=w || sy>=h)
+				continue;
+			int neighb_idx = (sy*w + sx)*spp;
+			for(int j=0;j<spp;j++)
+			{
+				SampleData &n = allSamples[neighb_idx + j];
+
+				// spatial (screen)
+				float xydist2 = 0.f;
+				for (int k = 0; k < 2; k++) {
+					xydist2 += sqr(n.imgPos[k] - s.imgPos[k]);
+				}
+				const float xyradius = fw/2.f;
+				const float xystddev = xyradius / 2.f;								// 2 stddevs (98%) at the filter border
+				float d = xydist2/(2*xystddev*xystddev);
+
+				// normal
+				float ndist2  = 0.f;
+				for (int k = 0; k < 3; k++)
+					ndist2 += sqr(n.normal[k] - s.normal[k]);
+				const float nstddev = 0.5f;
+				d += ndist2/(2*sqr(nstddev));
+
+				// combined
+				const float weight = exp( -d );
+				for(int k = 0; k < 3; k++)
+					smoothNormal[k] += weight*n.normal[k];
+				sampleCount++;
+			}
+		}
+		for (int k=0; k < 3; k++) {
+			s.normal[k] = smoothNormal[k]/sampleCount;
+		}
+	}
+	printf("done\n");
+}
+
 int main(int argc, char** argv)
 {
     if (argc == 1)
@@ -103,6 +159,8 @@ int main(int argc, char** argv)
     vector<SampleData> allSamples;
     int w, h, spp;
     readDump(argv, allSamples, w, h, spp);
+    smoothNormals(allSamples, w, h, spp);
+
     RandomParameterFilter rpf(w, h, spp, allSamples);
     rpf.Apply();
 
