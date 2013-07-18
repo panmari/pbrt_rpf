@@ -29,10 +29,10 @@
  */
 //debugging stuff
 #define DEBUG true
-#define DEBUG_PIXEL_NR 500 + 500*w
+#define DEBUG_PIXEL_NR 500 + 900*w
 
 //TODO: make this configurable in scene file
-#define JOUNI 0.2f
+#define JOUNI 0.02f
 
 //some parameters that should stay true for most things
 #define CROP_BOX true
@@ -61,10 +61,12 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 	this->w = width;
 	this->h = height;
 	this->spp = spp;
-	this->debugLog = fopen("rpf.log", "w");
-	fprintf(debugLog, "Number of samples: %lu", allSamples.size());
+	if (DEBUG) {
+		this->debugLog = fopen("rpf.log", "w");
+		fprintf(debugLog, "Number of samples: %lu", allSamples.size());
+	}
 	for (int i = 0; i < 4; i++) {
-		MAX_SAMPLES[i] = sqr(BOX_SIZE[i]) * spp * MAX_SAMPLES_FACTOR[0];
+		MAX_SAMPLES[i] = sqr(BOX_SIZE[i]) * spp * MAX_SAMPLES_FACTOR[i];
 	}
 }
 
