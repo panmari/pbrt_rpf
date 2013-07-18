@@ -9,7 +9,10 @@ struct SampleData {
 					thirdOrigin[i] = inputColors[i] = outputColors[i] =
 					firstReflectionDir[i] = 0.f;
 		}
-		lensPos[0] = lensPos[1] = imgPos[0] = imgPos[1]= time = 0.f;
+		for (int i = 0; i < 2; i++) {
+			lensPos[i] = imgPos[i]= 0.f;
+		}
+		time = 0.f;
 		x = y = 0;
 	}
 
