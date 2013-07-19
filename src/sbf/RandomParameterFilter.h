@@ -66,7 +66,7 @@ private:
     inline float sqr(float a) {return a*a;};
     inline float rcp(const float a) { return (a) ? 1.f/ a : 0.f; };
     void getPixelMeanAndStd(int pixelIdx, SampleData &sampleMean, SampleData &sampleStd);
-    void getGaussian(float stddev, int &x, int &y) const;
+    void getGaussian(float stddev, float &x, float &y) const;
     SampleData& getRandomSampleAt(const int x, const int y, int &idx); //TODO: long for veeery big images?
 };
 
