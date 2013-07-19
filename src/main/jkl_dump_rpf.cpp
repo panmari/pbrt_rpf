@@ -80,7 +80,8 @@ void readDump(char** argv, vector<SampleData> &allSamples, int &w, int &h, int &
 			float frdLength = 0.f;
 			for (int i = 0; i < 3; i++) {
 				s.firstReflectionDir[i] = s.thirdOrigin[i] - s.secondOrigin[i];
-				frdLength += s.firstReflectionDir[i]*s.firstReflectionDir[i];
+				frdLength += sqr(s.firstReflectionDir[i]);
+
 				s.inputColors[i] = s.outputColors[i] = s.rgb[i];
 			}
 			//normalize frd

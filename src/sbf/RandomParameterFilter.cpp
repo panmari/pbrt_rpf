@@ -28,8 +28,9 @@
 
  */
 //debugging stuff
-#define DEBUG true
-#define DEBUG_PIXEL_NR 910344/spp
+#define DEBUG false
+#define DEBUG_PIXEL_NR 173+337*w
+//910344/spp
 //200 + 200*w
 #define DUMP_INTERMEDIATE_RESULTS true
 
@@ -52,9 +53,9 @@
 #include "imageio.h"
 #include<boost/range/numeric.hpp>
 const int BOX_SIZE[] = { 55, 35, 17, 7 };
-//const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f }; // for fast prototyping, by jklethinen
+const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f }; // for fast prototyping, by jklethinen
 //const float MAX_SAMPLES_FACTOR[] = { 0.1f, 0.2f, 0.3f, 0.5f }; // by me
-const float MAX_SAMPLES_FACTOR[] = { 0.5f, 0.5f, 0.5f, 0.5f }; // by sen
+//const float MAX_SAMPLES_FACTOR[] = { 0.5f, 0.5f, 0.5f, 0.5f }; // by sen
 int MAX_SAMPLES[4];
 
 RandomParameterFilter::RandomParameterFilter(const int width, const int height,
@@ -138,7 +139,7 @@ void RandomParameterFilter::dumpIntermediateResults(int iterStep) {
 		Color c;
 		for (int j=0; j<spp; j++)
 			for(int k=0; k<3;k++){
-				c[k] += allSamples[i+j].outputColors[k]*allSamples[i+j].rho[k];
+				c[k] += allSamples[i+j].outputColors[k]; //*allSamples[i+j].rho[k];
 			}
 		c /= spp;
 		fltImg(allSamples[i].x, allSamples[i].y) = c;
@@ -228,7 +229,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 				continue;
 			x = pixelMean.x + int(floor(offsetX+0.5f));
 			y = pixelMean.y + int(floor(offsetY+0.5f));
-		} while(x == pixelMean.x || y == pixelMean.y || 			// can not be sampe pixel
+		} while((x == pixelMean.x && y == pixelMean.y) || 			// can not be same pixel
 				x < 0 || y < 0 || x >= w || y >= h);				// or outside of image
 		SampleData &sample = getRandomSampleAt(x, y, idx);
 		// to check if sample from right location was retrieved
