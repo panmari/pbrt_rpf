@@ -439,6 +439,14 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 			}
 		}
 	}
+
+	if (DEBUG) {
+		fprintf(debugLog, "After HDR-clamp and reinsertion of energy: \n");
+		for (int i = 0; i < spp; i++) { //can I assign the whole array at once?
+			SampleData &s = allSamples[pixelIdx + i];
+			for (int k=0; k<3; k++) fprintf(debugLog, "%-.4f, %-.4f\n", s.inputColors[k], s.outputColors[k]);
+		}
+	}
 }
 
 /**
