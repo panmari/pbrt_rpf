@@ -14,7 +14,7 @@
 #include "sbf/RandomParameterFilter.h"
 #include "sbf/SampleData.h"
 #include "core/imageio.h"
-
+#include "sbf/VectorNf.h"
 using namespace std;
 
 inline float sqr(float a) {return a*a;};
@@ -104,13 +104,14 @@ void smoothNormals(vector<SampleData> &allSamples, const int w, const int h, con
 	const int fw = 5;
 	const int fr = fw/2;
 
-	//TODO: this probably doesnt everythin correctly
 	printf("Smoothing normals... \n");
+	vector<VectorNf<3> > smoothNormals;
+	smoothNormals.reserve(allSamples.size());
+
 	for(SampleData &s: allSamples) {
-		float smoothNormal[3];
-		for (int k = 0; k<3; k++)
-			smoothNormal[k] = 0;
+		VectorNf<3> smoothNormal(0.f);
 		float weightSum = 0.f;
+
 		for(int dx=-fr;dx<=fr;dx++)
 		for(int dy=-fr;dy<=fr;dy++)
 		{
@@ -125,12 +126,11 @@ void smoothNormals(vector<SampleData> &allSamples, const int w, const int h, con
 
 				// spatial (screen)
 				float xydist2 = 0.f;
-				for (int k = 0; k < 2; k++) {
+				for (int k = 0; k < 2; k++)
 					xydist2 += sqr(n.imgPos[k] - s.imgPos[k]);
-				}
 				const float xyradius = fw/2.f;
 				const float xystddev = xyradius / 2.f;								// 2 stddevs (98%) at the filter border
-				float d = xydist2/(2*xystddev*xystddev);
+				float d = xydist2/(2*sqr(xystddev));
 
 				// normal
 				float ndist2  = 0.f;
@@ -146,9 +146,13 @@ void smoothNormals(vector<SampleData> &allSamples, const int w, const int h, con
 				weightSum += weight;
 			}
 		}
-		for (int k=0; k < 3; k++) {
-			s.normal[k] = smoothNormal[k]/weightSum;
-		}
+		smoothNormal /= weightSum;
+		smoothNormals.push_back(smoothNormal);
+	}
+
+	for (uint i = 0; i < allSamples.size(); i++) {
+		for(int k = 0; k < 3; k++)
+			allSamples[i].normal[k] = smoothNormals[i][k];
 	}
 	printf("done\n");
 }
