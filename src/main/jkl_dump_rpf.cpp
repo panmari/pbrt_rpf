@@ -101,14 +101,16 @@ void readDump(char** argv, vector<SampleData> &allSamples, int &w, int &h, int &
  * Dumps from jkl contain geometric normals, we need smooth ones here.
  */
 void smoothNormals(vector<SampleData> &allSamples, const int w, const int h, const int spp) {
-	int fw = 5;
-	int fr = fw/2;
+	const int fw = 5;
+	const int fr = fw/2;
 
 	//TODO: this probably doesnt everythin correctly
 	printf("Smoothing normals... \n");
 	for(SampleData &s: allSamples) {
 		float smoothNormal[3];
-		int sampleCount = 0;
+		for (int k = 0; k<3; k++)
+			smoothNormal[k] = 0;
+		float weightSum = 0.f;
 		for(int dx=-fr;dx<=fr;dx++)
 		for(int dy=-fr;dy<=fr;dy++)
 		{
@@ -141,11 +143,11 @@ void smoothNormals(vector<SampleData> &allSamples, const int w, const int h, con
 				const float weight = exp( -d );
 				for(int k = 0; k < 3; k++)
 					smoothNormal[k] += weight*n.normal[k];
-				sampleCount++;
+				weightSum += weight;
 			}
 		}
 		for (int k=0; k < 3; k++) {
-			s.normal[k] = smoothNormal[k]/sampleCount;
+			s.normal[k] = smoothNormal[k]/weightSum;
 		}
 	}
 	printf("done\n");
