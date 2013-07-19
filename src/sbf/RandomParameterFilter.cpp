@@ -52,6 +52,8 @@
 #include "progressreporter.h"
 #include "imageio.h"
 #include<boost/range/numeric.hpp>
+#include <sys/time.h>
+
 const int BOX_SIZE[] = { 55, 35, 17, 7 };
 const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f }; // for fast prototyping, by jklethinen
 //const float MAX_SAMPLES_FACTOR[] = { 0.1f, 0.2f, 0.3f, 0.5f }; // by me
@@ -74,6 +76,8 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 }
 
 void RandomParameterFilter::Apply() {
+	timeval startTime, endTime;
+	gettimeofday(&startTime, NULL);
 	preprocessSamples();
 
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
@@ -128,8 +132,9 @@ void RandomParameterFilter::Apply() {
 		if (DUMP_INTERMEDIATE_RESULTS)
 			dumpIntermediateResults(iterStep);
 	}
-
-
+	gettimeofday(&endTime, NULL);
+	int duration(endTime.tv_sec - startTime.tv_sec);
+	printf("The whole rendering process took %d minutes and %d seconds", duration/60, duration%60);
 }
 
 void RandomParameterFilter::dumpIntermediateResults(int iterStep) {
