@@ -2,14 +2,20 @@
 #define SAMPLE_DATA_H
 
 struct SampleData {
-	SampleData() {
+
+	void reset() {
 		for (int i = 0; i < 3; i++) {
 			rgb[i] = normal[i] = secondNormal[i] = rho[i] = secondOrigin[i] =
-					thirdOrigin[i] = inputColors[i] = outputColors[i] = 0.f;
+					thirdOrigin[i] = inputColors[i] = outputColors[i] =
+					firstReflectionDir[i] = 0.f;
 		}
-		lensPos[0] = lensPos[1] = time = 0.f;
+		for (int i = 0; i < 2; i++) {
+			lensPos[i] = imgPos[i]= 0.f;
+		}
+		time = 0.f;
 		x = y = 0;
 	}
+
 	// position features (the first 6 values)
 	float secondOrigin[3];  //0, 1, 2
 	float thirdOrigin[3];	//3, 4, 5
@@ -22,8 +28,9 @@ struct SampleData {
 	float imgPos[2];		//18, 19
 
 	//random parameters
-	float lensPos[2];		//20, 21
-	float time;				//22
+	float firstReflectionDir[3]; //	20, 21, 22
+	float lensPos[2];		//		23, 24
+	float time;				//		25
 
 	// input/output colors:
 	float inputColors[3];	//whatev
@@ -39,8 +46,8 @@ struct SampleData {
 	static int getImgPosOffset()			{ return 18; }
 	static int getImgPosSize()				{ return 2; }
 	static int getRandomParamsOffset()		{ return 20; }
-	static int getRandomParametersSize()	{ return 2; }
-	static int getLastNormalizedOffset()	{ return 22; } //this should mark the last used parameter
+	static int getRandomParametersSize()	{ return 5; }
+	static int getLastNormalizedOffset()	{ return 25; } //this should mark the last used parameter
 	void   operator+=(const SampleData& s)	{ for(int i=0;i<getSize();i++) (*this)[i] += s[i]; }
 	void   divide(int s)					{ for(int i=0;i<getSize();i++) (*this)[i] /= float(s); }
 	float& operator[](int i)				{ return ((float*)this)[i]; }

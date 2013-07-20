@@ -102,8 +102,6 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
     int y = sample.y-yPixelStart;
     // Check if the sample is in the image
     if (x < 0 || y < 0 || x >= xPixelCount || y >= yPixelCount)  {
-    	//TODO: one sample too few here?
-    	//printf("Sorted out a sample at %d, %d", x, y);
         return;    
     }
     // Convert to 3d color space from Spectrum
@@ -116,6 +114,7 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
     SampleData& sd = allSamples[idx];
     sd.x = x;
     sd.y = y;
+    float frdLength = 0.f;
     for(int i = 0; i < 3; i++) {
     	sd.outputColors[i] = sd.inputColors[i] = sd.rgb[i] = xyz[i]; //bit dangerous to also apply this to output color
     	sd.rho[i] = rhoXYZ[i];
@@ -123,7 +122,13 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
     	sd.secondNormal[i] = isect.secondNormal[i];
     	sd.secondOrigin[i] = isect.secondOrigin[i];
     	sd.thirdOrigin[i] = isect.thirdOrigin[i];
+    	sd.firstReflectionDir[i] = sd.thirdOrigin[i] - sd.secondOrigin[i];
+    	frdLength += sd.firstReflectionDir[i]*sd.firstReflectionDir[i];
     }
+    // normalize firstReflectionDir
+    frdLength = sqrt(frdLength);
+    for (int i = 0; i < 3; i++)
+    	sd.firstReflectionDir[i] /= frdLength;
     sd.imgPos[0] = sample.imageX;
     sd.imgPos[1] = sample.imageY;
     sd.lensPos[0] = sample.lensU;
@@ -174,7 +179,6 @@ float SBF::CalculateAvgSpp() const {
 void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
     Update(true);
 
-    printf("\nExpected %lu samples, got %ld \n", allSamples.size(), sampleCount);
     ProgressReporter reporter(1, "Dumping images");
     string filenameBase = filename.substr(0, filename.rfind("."));
     string filenameExt  = filename.substr(filename.rfind("."));

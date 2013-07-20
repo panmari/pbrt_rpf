@@ -1,6 +1,8 @@
 *.log
 **/bin/*
 
+jkl_dumps/
+
 # Compiled Object files
 *.slo
 *.lo
