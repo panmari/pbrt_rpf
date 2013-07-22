@@ -1,6 +1,11 @@
 #ifndef SAMPLE_DATA_H
 #define SAMPLE_DATA_H
 
+#ifdef __CUDACC__
+#define CUDA_PREFIX __host__ __device__
+#else
+#define CUDA_PREFIX
+#endif
 struct SampleData {
 
 	void reset() {
@@ -38,31 +43,32 @@ struct SampleData {
 	int x, y;
 	// Some handy accessor methods, thx @jklethinen
 	// asserts that float and int are the same length
-	static int getSize()					{ return sizeof(SampleData)/sizeof(float); }
-	static int getFeaturesOffset() 			{ return 0; }
-	static int getFeaturesSize()			{ return 15; }
-	static int getColorOffset()				{ return 15; }
-	static int getColorSize()				{ return 3; }
-	static int getImgPosOffset()			{ return 18; }
-	static int getImgPosSize()				{ return 2; }
-	static int getRandomParamsOffset()		{ return 20; }
-	static int getRandomParametersSize()	{ return 5; }
-	static int getLastNormalizedOffset()	{ return 25; } //this should mark the last used parameter
-	void   operator+=(const SampleData& s)	{ for(int i=0;i<getSize();i++) (*this)[i] += s[i]; }
-	void   divide(int s)					{ for(int i=0;i<getSize();i++) (*this)[i] /= float(s); }
-	float& operator[](int i)				{ return ((float*)this)[i]; }
-	const float& operator[](int i) const	{ return ((float*)this)[i]; }
-	float sum() const						{ float s=0; for(int i=0;i<getSize();i++) s+=(*this)[i]; return s; }
-	float avg() const						{ return sum()/getSize(); }
+	CUDA_PREFIX static int getSize()					{ return sizeof(SampleData)/sizeof(float); }
+	CUDA_PREFIX static int getFeaturesOffset() 			{ return 0; }
+	CUDA_PREFIX static int getFeaturesSize()			{ return 15; }
+	CUDA_PREFIX static int getColorOffset()				{ return 15; }
+	CUDA_PREFIX static int getColorSize()				{ return 3; }
+	CUDA_PREFIX static int getImgPosOffset()			{ return 18; }
+	CUDA_PREFIX static int getImgPosSize()				{ return 2; }
+	CUDA_PREFIX static int getRandomParamsOffset()		{ return 20; }
+	CUDA_PREFIX static int getRandomParametersSize()	{ return 5; }
+	CUDA_PREFIX static int getLastNormalizedOffset()	{ return 25; } //this should mark the last used parameter
+	CUDA_PREFIX void   operator+=(const SampleData& s)	{ for(int i=0;i<getSize();i++) (*this)[i] += s[i]; }
+	CUDA_PREFIX void   divide(int s)					{ for(int i=0;i<getSize();i++) (*this)[i] /= float(s); }
+	CUDA_PREFIX float& operator[](int i)				{ return ((float*)this)[i]; }
+	CUDA_PREFIX const float& operator[](int i) const	{ return ((float*)this)[i]; }
+	CUDA_PREFIX float sum() const						{ float s=0; for(int i=0;i<getSize();i++) s+=(*this)[i]; return s; }
+	CUDA_PREFIX float avg() const						{ return sum()/getSize(); }
 
 	/**
 	 * For ordering in sbf.h
 	 */
-	bool operator <(const SampleData& other) const {
+	CUDA_PREFIX bool operator <(const SampleData& other) const {
 		if (y == other.y)
 			return x < other.x;
 		else return y < other.y;
 	}
+
 };
 
 #endif //SAMPLE_DATA_H
