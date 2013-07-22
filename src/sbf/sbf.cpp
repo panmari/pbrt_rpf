@@ -231,16 +231,10 @@ TwoDArray<Color> SBF::FloatImageToColor(const TwoDArray<float> &image) const {
     return colorImg;
 }
 
-bool SBF::comparator(SampleData sd1, SampleData sd2) {
-	if (sd1.y == sd2.y)
-			return sd1.x < sd2.x;
-	else return sd1.y < sd2.y;
-}
-
 void SBF::Update(bool final) {
-	ProgressReporter reporter(2, "Putting together debug images");
-    std::sort(allSamples.begin(), allSamples.end(), SBF::comparator);
-    reporter.Update(1);
+	ProgressReporter reporter(2, "Sorting samples...");
+    std::sort(allSamples.begin(), allSamples.end());
+    reporter.Done();
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
     for(uint i = 0; i < allSamples.size(); i++) {
 		SampleData sd = allSamples[i];
@@ -281,8 +275,6 @@ void SBF::Update(bool final) {
 			lensImg(x, y) /= spp;
     	}
     }
-
-    reporter.Done();
 
     TwoDArray<Color> rColImg = colImg;
     /**

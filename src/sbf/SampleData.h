@@ -54,6 +54,15 @@ struct SampleData {
 	const float& operator[](int i) const	{ return ((float*)this)[i]; }
 	float sum() const						{ float s=0; for(int i=0;i<getSize();i++) s+=(*this)[i]; return s; }
 	float avg() const						{ return sum()/getSize(); }
+
+	/**
+	 * For ordering in sbf.h
+	 */
+	bool operator <(const SampleData& other) const {
+		if (y == other.y)
+			return x < other.x;
+		else return y < other.y;
+	}
 };
 
 #endif //SAMPLE_DATA_H
