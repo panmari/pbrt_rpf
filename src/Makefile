@@ -12,6 +12,8 @@ HAVE_LIBTIFF=0
 TIFF_INCLUDES=-I/usr/local/include -I/opt/local/include
 TIFF_LIBDIR=-L/usr/local/lib -L/opt/local/lib
 
+
+
 HAVE_DTRACE=0
 
 # remove -DPBRT_HAS_OPENEXR to build without OpenEXR support
@@ -25,9 +27,11 @@ MARCH=-m64
 
 # change this to -g3 for debug builds
 #OPT=-Ofast -fopenmp -std=c++0x
-OPT=-g3 -fopenmp -std=c++0x
+#OPT=-g3 -fopenmp -std=c++0x
+OPT=-O
 # comment out this line to enable assertions at runtime
-DEFS += -DNDEBUG -D_GLIBCXX_DEBUG
+#DEFS += -DNDEBUG 
+#DEFS += -DNDEBUG -D_GLIBCXX_DEBUG
 
 #########################################################################
 # nothing below this line should need to be changed (usually)
@@ -49,7 +53,7 @@ else
     DEFS += -DPBRT_PROBES_NONE
 endif
 
-EXRLIBS=$(EXR_LIBDIR) -Bstatic -lIex -lIlmImf -lIlmThread -lImath -lIex -lHalf -Bdynamic
+EXRLIBS=$(EXR_LIBDIR) -lIex -lIlmImf -lIlmThread -lImath -lIex -lHalf
 ifeq ($(ARCH),Linux)
   EXRLIBS += -lpthread
 endif
@@ -60,11 +64,11 @@ ifeq ($(ARCH),Darwin)
   EXRLIBS += -lz
 endif
 
-CC=gcc
-CXX=g++
+CC=nvcc
+CXX=nvcc
 LD=$(CXX) $(OPT) $(MARCH)
 INCLUDE=-I. -Icore $(EXR_INCLUDES) $(TIFF_INCLUDES)
-WARN=-Wall
+#WARN=-Wall
 CWD=$(shell pwd)
 CXXFLAGS=$(OPT) $(MARCH) $(INCLUDE) $(WARN) $(DEFS)
 CCFLAGS=$(CXXFLAGS)
@@ -171,7 +175,7 @@ objs/pbrt.o: main/pbrt.cpp
 objs/jkl_dump_rpf.o: main/jkl_dump_rpf.cpp
 	@echo "Building object $@"
 	@$(CXX) $(CXXFLAGS) -o $@ -c $<
-
+	
 objs/tools_%.o: tools/%.cpp
 	@echo "Building object $@"
 	@$(CXX) $(CXXFLAGS) -o $@ -c $<

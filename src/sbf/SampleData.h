@@ -46,7 +46,7 @@ struct SampleData {
 	static int getImgPosOffset()			{ return 18; }
 	static int getImgPosSize()				{ return 2; }
 	static int getRandomParamsOffset()		{ return 20; }
-	static int getRandomParametersSize()	{ return 5; }
+	static int getRandomParametersSize()	{ return 3; }
 	static int getLastNormalizedOffset()	{ return 25; } //this should mark the last used parameter
 	void   operator+=(const SampleData& s)	{ for(int i=0;i<getSize();i++) (*this)[i] += s[i]; }
 	void   divide(int s)					{ for(int i=0;i<getSize();i++) (*this)[i] /= float(s); }

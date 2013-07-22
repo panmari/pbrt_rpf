@@ -32,7 +32,7 @@
 #define DEBUG_PIXEL_NR 173+337*w
 //910344/spp
 //200 + 200*w
-#define DUMP_INTERMEDIATE_RESULTS true
+#define DUMP_INTERMEDIATE_RESULTS false
 
 //TODO: make this configurable in scene file
 #define JOUNI 0.02f
@@ -53,6 +53,7 @@
 #include "imageio.h"
 #include<boost/range/numeric.hpp>
 #include <sys/time.h>
+#include <boost/lexical_cast.hpp>
 
 const int BOX_SIZE[] = { 55, 35, 17, 7 };
 const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f }; // for fast prototyping, by jklethinen
@@ -81,7 +82,7 @@ void RandomParameterFilter::Apply() {
 	preprocessSamples();
 
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
-		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + to_string(iterStep + 1) + " of 4");
+		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + boost::lexical_cast<std::string>(iterStep + 1) + " of 4");
 		if (DEBUG) fprintf(debugLog, "\n*** Starting pass number %d ***\n", iterStep);
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
 #if DEBUG
@@ -94,7 +95,8 @@ void RandomParameterFilter::Apply() {
 
 			if (DEBUG) {
 				fprintf(debugLog, "\nNormalized feature vectors in neighbourhood: \n");
-				for (SampleData& s: neighbourhood) {
+				for (int i=0; i < neighbourhood.size(); i++) {
+					SampleData& s = neighbourhood[i];
 					//verified with matlab, has mean 0 and std 1
 					for (int f=SampleData::getFeaturesOffset(); f < SampleData::getFeaturesSize(); f++) {fprintf(debugLog, "%-.3f ", s[f]); }
 					fprintf(debugLog, "\n");
@@ -122,7 +124,8 @@ void RandomParameterFilter::Apply() {
 		}
 
 		//write output to input
-		for (SampleData &s: allSamples) {
+		for (int i=0; i < allSamples.size(); i++) {
+			SampleData &s = allSamples[i];
 			for (int k=0; k<3; k++) {
 				s.inputColors[k] = s.outputColors[k];
 			}
@@ -149,7 +152,7 @@ void RandomParameterFilter::dumpIntermediateResults(int iterStep) {
 		c /= spp;
 		fltImg(allSamples[i].x, allSamples[i].y) = c;
 	}
-	::WriteImage("pass" + to_string(iterStep+1) + ".exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
+	::WriteImage("pass" + boost::lexical_cast<std::string>(iterStep+1) + ".exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
 					 w, h, 0, 0);
 }
 
@@ -183,8 +186,8 @@ void RandomParameterFilter::preprocessSamples() {
 			pixelValidSamplesMean.divide(validSamplesIdx.size());
 		if (validSamplesIdx.size() < spp/2)
 			printf("Pixel has only %lu valid samples \n", validSamplesIdx.size());
-		for (uint invalidSampleIdx: invalidSamplesIdx) {
-			SampleData &s = allSamples[invalidSampleIdx];
+		for (int iS=0; iS < invalidSamplesIdx.size(); iS++) {
+			SampleData &s = allSamples[invalidSamplesIdx[iS]];
 			if (validSamplesIdx.size() > 0) {
 				//replace invalid sample with random valid sample from same pixel
 				int replaceIdx = (int) (rng.RandomFloat()*validSamplesIdx.size());
@@ -230,7 +233,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		do {
 			float offsetX, offsetY;
 			getGaussian(stdv, offsetX, offsetY);
-			if (CROP_BOX && (abs(offsetX) >= boxsize/2.f || abs(offsetY) >= boxsize/2.f))		// get only pixels inside of 'box'
+			if (CROP_BOX && (fabs(offsetX) >= boxsize/2.f || fabs(offsetY) >= boxsize/2.f))		// get only pixels inside of 'box'
 				continue;
 			x = pixelMean.x + int(floor(offsetX+0.5f));
 			y = pixelMean.y + int(floor(offsetY+0.5f));
@@ -280,7 +283,8 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	SampleData nMean, nMeanSquare, nStd;
 	nMean.reset(); nMeanSquare.reset();
 	for (int f = 0; f < SampleData::getLastNormalizedOffset(); f++) {
-		for (SampleData& s: neighbourhood) {
+		for (int i=0; i< neighbourhood.size(); i++) {
+			const SampleData& s = neighbourhood[i];
 			nMean[f] += s[f];
 			nMeanSquare[f] += sqr(s[f]);
 		}
@@ -290,7 +294,8 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	}
 	for (int f = 0; f < SampleData::getLastNormalizedOffset(); f++) {
 		float overStd = rcp(nStd[f]);
-		for (SampleData& s: neighbourhood) {
+		for (int i=0; i< neighbourhood.size(); i++) {
+			SampleData& s = neighbourhood[i];
 			s[f] = (s[f] - nMean[f])*overStd;
 		}
 	}
@@ -325,9 +330,9 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 	}
 
 	// dependency for scene features
-	vector<vector<float>> m_D_fk_rl = vector<vector<float>>(SampleData::getFeaturesSize());
-	vector<vector<float>> m_D_fk_pl = vector<vector<float>>(SampleData::getFeaturesSize());
-	vector<vector<float>> m_D_fk_cl = vector<vector<float>>(SampleData::getFeaturesSize());
+	vector<vector<float> > m_D_fk_rl = vector<vector<float> >(SampleData::getFeaturesSize());
+	vector<vector<float> > m_D_fk_pl = vector<vector<float> >(SampleData::getFeaturesSize());
+	vector<vector<float> > m_D_fk_cl = vector<vector<float> >(SampleData::getFeaturesSize());
 	std::fill(m_D_fk_rl.begin(), m_D_fk_rl.end(), vector<float>(m_D_rk_c.size()));
 	std::fill(m_D_fk_pl.begin(), m_D_fk_pl.end(), vector<float>(m_D_pk_c.size()));
 	std::fill(m_D_fk_cl.begin(), m_D_fk_cl.end(), vector<float>(3)); //three color channels

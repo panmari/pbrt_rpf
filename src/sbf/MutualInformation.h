@@ -18,7 +18,8 @@ class MutualInformation {
 public:
 	float mutualinfo(const vector<SampleData> &neighbourhood, const int firstChannel, const int secondChannel) {
 		clearHistograms();
-		for (const SampleData& s: neighbourhood) {
+		for (int i=0; i < neighbourhood.size(); i++) {
+			const SampleData &s = neighbourhood[i];
 			int a = quantize(s[firstChannel]);
 			int b = quantize(s[secondChannel]);
 			hist_a[a]++;

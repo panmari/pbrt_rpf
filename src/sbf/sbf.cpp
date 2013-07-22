@@ -43,7 +43,7 @@
 #include "RandomParameterFilter.h"
 
 #include "fmath.hpp"
-
+#include <thrust/sort.h>
 #include <limits>
 #include <algorithm>
 #include <omp.h>
