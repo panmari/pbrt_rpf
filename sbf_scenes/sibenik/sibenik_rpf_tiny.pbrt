@@ -8,11 +8,13 @@ Film "sbfimage"
     "bool dumpfeaturebuffer" ["true"]
     "string filter"          ["rpf"] # rpf-> Random Parameter Filter
 
-Sampler "random"     
-    "integer pixelsamples" [8] 
+#Sampler "lowdiscrepancy" "integer pixelsamples" [8]
+Sampler "random" "integer pixelsamples" [8]
+SurfaceIntegrator "path" "integer maxdepth" [1]
 
 Renderer "samplerrenderer"
 # See sbf.cpp for the usage of built-in filters
+
 
 LookAt  15 2.5 4.3   -.261 -.031 1.252   0 0 1
 
@@ -20,8 +22,6 @@ Camera "perspective"
     "float fov" [50.1343]
     "float focaldistance" [15]
     "float lensradius" [.1]
-
-SurfaceIntegrator "path" "integer maxdepth" [10]
 
 WorldBegin
 
