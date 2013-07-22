@@ -4,15 +4,6 @@
 
 #include "cuda_device.h"
 
-struct compSD : public thrust::binary_function<SampleData,SampleData,bool>
-{
-__host__ __device__ bool operator()(const SampleData &sd1, const SampleData &sd2) {
-	if (sd1.y == sd2.y)
-		return sd1.x < sd2.x;
-	else return sd1.y < sd2.y;
-}
-};
-
 void sort_on_device(std::vector<SampleData>& h_vec)
 {
     // transfer data to the device
@@ -25,16 +16,24 @@ void sort_on_device(std::vector<SampleData>& h_vec)
     thrust::copy(d_vec.begin(), d_vec.end(), h_vec.begin());
 }
 
-struct plusSD : public thrust::binary_function<SampleData,SampleData,SampleData>
+struct plusSquare : public thrust::binary_function<SampleData,SampleData,SampleData>
 {
-__host__ __device__ SampleData operator()(const SampleData &sd1, const SampleData &sd2) {
-	//TODO
+__device__ SampleData operator()(const SampleData &sd1, const SampleData &sd2) {
 	SampleData s;
-/*
-	for(int f=0; f<25; f++) {
-		(float*(&s))[f] = (float*(&sd1))[f] + (float*(&sd2))[f];
+	for(int f=0; f<SampleData::getLastNormalizedOffset(); f++) {
+		s[f] = sd1[f]*sd1[f] + sd2[f]*sd2[f];
 	}
-	*/
+	return s;
+}
+};
+
+struct minusMean : public thrust::unary_function
+{
+__device__ SampleData operator()(const SampleData &sd1, const SampleData &sd2) {
+	SampleData s;
+	for(int f=0; f<SampleData::getLastNormalizedOffset(); f++) {
+		s[f] = sd1[f]*sd1[f] + sd2[f]*sd2[f];
+	}
 	return s;
 }
 };
@@ -45,7 +44,10 @@ void normalize(std::vector<SampleData>& v) {
 
 	SampleData mean, meanSquare;
 	mean.reset(); meanSquare.reset();
-	thrust::reduce(d_v.begin(), d_v.end(), mean, plusSD());
+	mean = thrust::reduce(d_v.begin(), d_v.end(), mean);
+	meanSquare = thrust::reduce(d_v.begin(), d_v.end(), meanSquare, plusSquare());
+	thrust::device_vector<SampleData> temp(v.size());
+	thrust::transform(d_v.begin(), d_v.end(), d_v, minusMean(mean));
 
 	thrust::copy(d_v.begin(), d_v.end(), v.begin());
 }
