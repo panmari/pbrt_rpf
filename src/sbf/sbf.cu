@@ -43,6 +43,7 @@
 #include "RandomParameterFilter.h"
 
 #include "fmath.hpp"
+#include <thrust/device_vector.h>
 #include <thrust/sort.h>
 #include <limits>
 #include <algorithm>
@@ -231,15 +232,11 @@ TwoDArray<Color> SBF::FloatImageToColor(const TwoDArray<float> &image) const {
     return colorImg;
 }
 
-bool SBF::comparator(SampleData sd1, SampleData sd2) {
-	if (sd1.y == sd2.y)
-			return sd1.x < sd2.x;
-	else return sd1.y < sd2.y;
-}
-
 void SBF::Update(bool final) {
 	ProgressReporter reporter(2, "Putting together debug images");
-    std::sort(allSamples.begin(), allSamples.end(), SBF::comparator);
+	thrust::device_vector<SampleData> d_allSamples = allSamples;
+    thrust::sort(d_allSamples.begin(), d_allSamples.end());
+    thrust::copy(d_allSamples.begin(), d_allSamples.end(), allSamples);
     reporter.Update(1);
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
     for(uint i = 0; i < allSamples.size(); i++) {

@@ -109,7 +109,8 @@ void smoothNormals(vector<SampleData> &allSamples, const int w, const int h, con
 	vector<VectorNf<3> > smoothNormals;
 	smoothNormals.reserve(allSamples.size());
 
-	for(SampleData &s: allSamples) {
+	for(int q=0; q < allSamples.size(); q++) {
+		SampleData &s = allSamples[q];
 		VectorNf<3> smoothNormal(0.f);
 		float weightSum = 0.f;
 
