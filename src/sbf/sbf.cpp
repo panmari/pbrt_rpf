@@ -43,6 +43,7 @@
 #include "RandomParameterFilter.h"
 
 #include "fmath.hpp"
+#include "cuda_device.h"
 
 #include <limits>
 #include <algorithm>
@@ -232,8 +233,8 @@ TwoDArray<Color> SBF::FloatImageToColor(const TwoDArray<float> &image) const {
 }
 
 void SBF::Update(bool final) {
-	ProgressReporter reporter(2, "Sorting samples...");
-    std::sort(allSamples.begin(), allSamples.end());
+	ProgressReporter reporter(1, "Sorting samples...");
+    sort_on_device(allSamples);
     reporter.Done();
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
     for(uint i = 0; i < allSamples.size(); i++) {

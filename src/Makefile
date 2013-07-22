@@ -63,22 +63,24 @@ endif
 CC=gcc
 CXX=g++
 LD=$(CXX) $(OPT) $(MARCH)
-INCLUDE=-I. -Icore $(EXR_INCLUDES) $(TIFF_INCLUDES)
+INCLUDE=-I. -Icore $(EXR_INCLUDES) $(TIFF_INCLUDES) -I/usr/local/cuda/include/
 WARN=-Wall
 CWD=$(shell pwd)
 CXXFLAGS=$(OPT) $(MARCH) $(INCLUDE) $(WARN) $(DEFS)
 CCFLAGS=$(CXXFLAGS)
-LIBS=$(LEXLIB) $(EXR_LIBDIR) $(EXRLIBS) -lm
+LIBS=$(LEXLIB) $(EXR_LIBDIR) $(EXRLIBS) -lm -L/usr/local/cuda/lib64 -lcudart
 
 LIB_CSRCS=core/targa.c
 LIB_CXXSRCS  = $(wildcard core/*.cpp) core/pbrtlex.cpp core/pbrtparse.cpp
 LIB_CXXSRCS += $(wildcard accelerators/*.cpp cameras/*.cpp film/*.cpp filters/*.cpp )
 LIB_CXXSRCS += $(wildcard integrators/*.cpp lights/*.cpp materials/*.cpp renderers/*.cpp )
 LIB_CXXSRCS += $(wildcard samplers/*.cpp shapes/*.cpp textures/*.cpp volumes/*.cpp)
-LIB_CXXSRCS += $(wildcard sbf/*.cpp)
+LIB_CXXSRCS += $(wildcard sbf/*.cpp) 
+LIB_CUDASRCS = $(wildcard sbf/*.cu)
 
 LIBOBJS  = $(addprefix objs/, $(subst /,_,$(LIB_CSRCS:.c=.o)))
 LIBOBJS += $(addprefix objs/, $(subst /,_,$(LIB_CXXSRCS:.cpp=.o)))
+LIBOBJS += $(addprefix objs/, $(subst /,_,$(LIB_CUDASRCS:.cu=.o)))
 
 HEADERS = $(wildcard */*.h) $(wildcard */*.hpp)
 
@@ -176,10 +178,15 @@ objs/tools_%.o: tools/%.cpp
 	@echo "Building object $@"
 	@$(CXX) $(CXXFLAGS) -o $@ -c $<
 
+objs/sbf_%.o: sbf/%.cu
+	@echo "Building object ON NVCC $@"
+	@nvcc -O2 -arch=sm_20 -o $@ -c $<
+
 objs/sbf_%.o: sbf/%.cpp
 	@echo "Building object $@"
 	@$(CXX) $(CXXFLAGS) -o $@ -c $<
 
+	
 bin/pbrt: objs/main_pbrt.o objs/libpbrt.a 
 	@echo "Linking $@"
 	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
