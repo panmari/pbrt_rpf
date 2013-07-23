@@ -28,6 +28,8 @@ OPT=-Ofast -fopenmp -std=c++0x
 #OPT=-g3 -fopenmp -std=c++0x
 # comment out this line to enable assertions at runtime
 #DEFS += -DNDEBUG -D_GLIBCXX_DEBUG
+#For generating profiling code
+#OPT=-g -pg -std=c++0x
 DEFS += -DNDEBUG
 #########################################################################
 # nothing below this line should need to be changed (usually)
