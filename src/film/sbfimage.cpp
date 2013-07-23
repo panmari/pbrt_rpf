@@ -42,7 +42,7 @@ SBFImageFilm::SBFImageFilm(int xres, int yres, Filter *filt, const float crop[4]
                      const string &fn, bool dp, SBF::FilterType type, 
                      const vector<float> &interParams, const vector<float> &finalParams,
                      float sigmaN, float sigmaR, float sigmaD,
-                     float interMseSigma, float finalMseSigma)
+                     float interMseSigma, float finalMseSigma, float jouni)
     : Film(xres, yres) {
     filter = filt;
     memcpy(cropWindow, crop, 4 * sizeof(float));
@@ -56,7 +56,7 @@ SBFImageFilm::SBFImageFilm(int xres, int yres, Filter *filt, const float crop[4]
     dump = dp;
     sbf = new SBF(xPixelStart, yPixelStart, xPixelCount, yPixelCount, 
                   filter, type, interParams, finalParams, 
-                  sigmaN, sigmaR, sigmaD, interMseSigma, finalMseSigma);
+                  sigmaN, sigmaR, sigmaD, interMseSigma, finalMseSigma, jouni);
 }
 
 
@@ -162,10 +162,10 @@ SBFImageFilm *CreateSBFImageFilm(const ParamSet &params, Filter *filter) {
     float sigmaD = params.FindOneFloat("sigmad", 0.6f);
     float interMseSigma = params.FindOneFloat("intermsesigma", 4.f);
     float finalMseSigma = params.FindOneFloat("finalmsesigma", 8.f);
-
+    float jouni = params.FindOneFloat("jouni", 0.02f);
     return new SBFImageFilm(xres, yres, filter, crop, filename, 
                             debug, type, interParamsV, finalParamsV,
                             sigmaN, sigmaR, sigmaD,
-                            interMseSigma, finalMseSigma);
+                            interMseSigma, finalMseSigma, jouni);
 }
 

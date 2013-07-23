@@ -47,15 +47,17 @@
 class RandomParameterFilter {
 public:
     RandomParameterFilter(const int width, const int height,
-    		const int spp, vector<SampleData> &allSamples);
+    		const int spp, const float jouni, vector<SampleData> &allSamples);
 
     void Apply();
 
 private:
     int h, w, spp;
+
 	FILE *debugLog;
 	vector<SampleData> &allSamples;
 	const RNG rng; //random generator
+	const float jouni;
 
 	void preprocessSamples();
 	void dumpIntermediateResults(int iterStep);

@@ -168,7 +168,7 @@ int main(int argc, char** argv)
     readDump(argv, allSamples, w, h, spp);
     smoothNormals(allSamples, w, h, spp);
 
-    RandomParameterFilter rpf(w, h, spp, allSamples);
+    RandomParameterFilter rpf(w, h, spp, 0.02f, allSamples);
     rpf.Apply();
 
     TwoDArray<Color> fltImg = TwoDArray<Color>(w, h);

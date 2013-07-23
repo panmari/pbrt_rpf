@@ -52,7 +52,7 @@ public:
               const string &filename, bool dp, SBF::FilterType type, 
               const vector<float> &interParams, const vector<float> &finalParams,
               float sigmaN, float sigmaR, float sigmaD,
-              float interMseSigmaS, float finalMseSigmaS);
+              float interMseSigmaS, float finalMseSigmaS, float jouni);
     ~SBFImageFilm() {
         delete sbf;
     }

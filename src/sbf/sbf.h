@@ -61,7 +61,7 @@ public:
         const vector<float> &interParams,
         const vector<float> &finalParams,
         float sigmaN, float sigmaR, float sigmaD,
-        float interMseSigma, float finalMseSigma);
+        float interMseSigma, float finalMseSigma, float jouni);
     ~SBF() {
         delete pixelInfos;
     }
@@ -124,6 +124,7 @@ private:
     vector<SampleData> allSamples;
     int xPixelStart, yPixelStart;
     int xPixelCount, yPixelCount;
+    float jouni;
 
     // Storing the image, features and their variance 
     // reconstructed by default filter

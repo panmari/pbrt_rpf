@@ -61,8 +61,8 @@ const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f }; // for fast pro
 int MAX_SAMPLES[4];
 
 RandomParameterFilter::RandomParameterFilter(const int width, const int height,
-		const int spp, vector<SampleData> &allSamples) :
-	allSamples(allSamples), rng(RNG(42)) {
+		const int spp, const float jouni, vector<SampleData> &allSamples) :
+	allSamples(allSamples), rng(RNG(42)), jouni(jouni) {
 	this->w = width;
 	this->h = height;
 	this->spp = spp;
@@ -330,7 +330,7 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 	vector<vector<float>> m_D_fk_cl = vector<vector<float>>(FEATURES_SIZE);
 	std::fill(m_D_fk_rl.begin(), m_D_fk_rl.end(), vector<float>(m_D_rk_c.size()));
 	std::fill(m_D_fk_pl.begin(), m_D_fk_pl.end(), vector<float>(m_D_pk_c.size()));
-	std::fill(m_D_fk_cl.begin(), m_D_fk_cl.end(), vector<float>(3)); //three color channels
+	std::fill(m_D_fk_cl.begin(), m_D_fk_cl.end(), vector<float>(COLOR_SIZE)); //three color channels
 
 	for(int k = 0; k < FEATURES_SIZE; k++) {
 		for(int l = 0; l < RANDOM_PARAMS_SIZE; l++) {
@@ -345,6 +345,8 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 			m_D_fk_cl[k][l] = m_D_fk_c[k]/3; // average of color channels
 		}
 	}
+
+	//TODO: do this per color channel?
 	const float D_r_c = boost::accumulate(m_D_rk_c, 0.f);
 	const float D_p_c = boost::accumulate(m_D_pk_c, 0.f);
 	const float D_f_c = boost::accumulate(m_D_fk_c, 0.f);

@@ -58,11 +58,11 @@ SBF::SBF(int xs, int ys, int w, int h,
          const vector<float> &_interParams,
          const vector<float> &_finalParams,
          float _sigmaN, float _sigmaR, float _sigmaD,
-         float _interMseSigma, float _finalMseSigma) :
+         float _interMseSigma, float _finalMseSigma, float _jouni) :
     fType(type), rFilter(filt),  
     interParams(_interParams), finalParams(_finalParams),
     sigmaN(_sigmaN), sigmaR(_sigmaR), sigmaD(_sigmaD),
-    interMseSigma(_interMseSigma), finalMseSigma(_finalMseSigma) {
+    interMseSigma(_interMseSigma), finalMseSigma(_finalMseSigma), jouni(_jouni) {
     xPixelStart = xs;
     yPixelStart = ys;
     xPixelCount = w;
@@ -116,7 +116,8 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
     sd.y = y;
     float frdLength = 0.f;
     for(int i = 0; i < 3; i++) {
-    	sd.outputColors[i] = sd.inputColors[i] = sd.rgb[i] = xyz[i]; //bit dangerous to also apply this to output color
+    	//bit dangerous to also apply this to output color, but useful for debugging
+    	sd.outputColors[i] = sd.inputColors[i] = sd.rgb[i] = xyz[i];
     	sd.rho[i] = rhoXYZ[i];
     	sd.normal[i] = isect.shadingN[i];
     	sd.secondNormal[i] = isect.secondNormal[i];
@@ -180,7 +181,7 @@ void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
     Update(true);
 
     ProgressReporter reporter(1, "Dumping images");
-    string filenameBase = filename.substr(0, filename.rfind("."));
+    string filenameBase = filename.substr(0, filename.rfind(".")) + "_jouni_" + std::to_string(jouni);
     string filenameExt  = filename.substr(filename.rfind("."));
 
     //printf("Avg spp: %.2f\n", CalculateAvgSpp());
@@ -336,7 +337,7 @@ void SBF::Update(bool final) {
         mseFilter.ApplyMSE(mseArray, featureImg, featureVarImg, fltMseArray);
         //filter.ApplyMSE(0.04f, mseArray, rColImg, featureImg, featureVarImg, fltMseArray);
     } else { //fType == RANDOM_PARAMETER_FILTER
-    	RandomParameterFilter rpf(xPixelCount, yPixelCount, spp, allSamples);
+    	RandomParameterFilter rpf(xPixelCount, yPixelCount, spp, jouni, allSamples);
     	rpf.Apply();
     }
 
