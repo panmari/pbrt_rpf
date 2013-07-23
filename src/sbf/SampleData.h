@@ -36,18 +36,20 @@ struct SampleData {
 	float inputColors[3];	//whatev
 	float outputColors[3];
 	int x, y;
+#define FEATURES_OFFSET 			0
+#define FEATURES_SIZE 				15
+#define COLOR_OFFSET				15
+#define COLOR_SIZE					3
+#define IMG_POS_OFFSET				18
+#define IMG_POS_SIZE				2
+#define	RANDOM_PARAMS_OFFSET 		20
+// You'll most likely want to change this:
+#define RANDOM_PARAMS_SIZE			5
+#define LAST_NORMALIZED_OFFSET		25
+
 	// Some handy accessor methods, thx @jklethinen
 	// asserts that float and int are the same length
 	static int getSize()					{ return sizeof(SampleData)/sizeof(float); }
-	static int getFeaturesOffset() 			{ return 0; }
-	static int getFeaturesSize()			{ return 15; }
-	static int getColorOffset()				{ return 15; }
-	static int getColorSize()				{ return 3; }
-	static int getImgPosOffset()			{ return 18; }
-	static int getImgPosSize()				{ return 2; }
-	static int getRandomParamsOffset()		{ return 20; }
-	static int getRandomParametersSize()	{ return 5; }
-	static int getLastNormalizedOffset()	{ return 25; } //this should mark the last used parameter
 	void   operator+=(const SampleData& s)	{ for(int i=0;i<getSize();i++) (*this)[i] += s[i]; }
 	void   divide(int s)					{ for(int i=0;i<getSize();i++) (*this)[i] /= float(s); }
 	float& operator[](int i)				{ return ((float*)this)[i]; }

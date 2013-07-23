@@ -96,14 +96,14 @@ void RandomParameterFilter::Apply() {
 				fprintf(debugLog, "\nNormalized feature vectors in neighbourhood: \n");
 				for (SampleData& s: neighbourhood) {
 					//verified with matlab, has mean 0 and std 1
-					for (int f=SampleData::getFeaturesOffset(); f < SampleData::getFeaturesSize(); f++) {fprintf(debugLog, "%-.3f ", s[f]); }
+					for (int f=FEATURES_OFFSET; f < FEATURES_SIZE; f++) {fprintf(debugLog, "%-.3f ", s[f]); }
 					fprintf(debugLog, "\n");
 				}
 				fflush(debugLog);
 			}
 
-			vector<float> alpha = vector<float>(SampleData::getColorSize());
-			vector<float> beta = vector<float>(SampleData::getFeaturesSize());
+			vector<float> alpha = vector<float>(COLOR_SIZE);
+			vector<float> beta = vector<float>(FEATURES_SIZE);
 			float W_r_c;
 			computeWeights(alpha, beta, W_r_c, neighbourhood, iterStep);
 
@@ -240,7 +240,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		// to check if sample from right location was retrieved
 		//if (DEBUG) { fprintf(debugLog, "[%d,%d vs %d,%d]", x, y, sample.x, sample.y); }
 		bool flag = true;
-		for (int f = SampleData::getFeaturesOffset(); f < SampleData::getFeaturesSize() && flag; f++) {
+		for (int f = FEATURES_OFFSET; f < FEATURES_SIZE && flag; f++) {
 			//printf("\n %f vs %f", sample[f], pixelMean[f]);
 			const float lim = (f < 6) ? 30.f : 3.f;
 			if( fabs(sample[f] - pixelMean[f]) > lim*pixelStd[f] &&
@@ -279,7 +279,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	// Normalization of neighbourhood
 	SampleData nMean, nMeanSquare, nStd;
 	nMean.reset(); nMeanSquare.reset();
-	for (int f = 0; f < SampleData::getLastNormalizedOffset(); f++) {
+	for (int f = 0; f < LAST_NORMALIZED_OFFSET; f++) {
 		for (SampleData& s: neighbourhood) {
 			nMean[f] += s[f];
 			nMeanSquare[f] += sqr(s[f]);
@@ -288,7 +288,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		nMeanSquare[f] /= neighbourhood.size();
 		nStd[f] = sqrt(max(0.f, nMeanSquare[f] - sqr(nMean[f])));
 	}
-	for (int f = 0; f < SampleData::getLastNormalizedOffset(); f++) {
+	for (int f = 0; f < LAST_NORMALIZED_OFFSET; f++) {
 		float overStd = rcp(nStd[f]);
 		for (SampleData& s: neighbourhood) {
 			s[f] = (s[f] - nMean[f])*overStd;
@@ -302,46 +302,46 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 	MutualInformation mi;
 	// dependency for colors
 
-	vector<float> m_D_rk_c = vector<float>(SampleData::getRandomParametersSize());
-	vector<float> m_D_pk_c = vector<float>(SampleData::getImgPosSize());
-	vector<float> m_D_fk_c = vector<float>(SampleData::getFeaturesSize());
+	vector<float> m_D_rk_c = vector<float>(RANDOM_PARAMS_SIZE);
+	vector<float> m_D_pk_c = vector<float>(IMG_POS_SIZE);
+	vector<float> m_D_fk_c = vector<float>(FEATURES_SIZE);
 	std::fill(m_D_rk_c.begin(), m_D_rk_c.end(), 0.f );
 	std::fill(m_D_pk_c.begin(), m_D_pk_c.end(), 0.f );
 	std::fill(m_D_fk_c.begin(), m_D_fk_c.end(), 0.f );
 
-	for(int l=0; l < SampleData::getColorSize(); l++) {
-		for(int k=0; k < SampleData::getRandomParametersSize(); k++) {
+	for(int l=0; l < COLOR_SIZE; l++) {
+		for(int k=0; k < RANDOM_PARAMS_SIZE; k++) {
 			m_D_rk_c[k] += mi.mutualinfo(neighbourhood,
-					l + SampleData::getColorOffset(), k + SampleData::getRandomParamsOffset());
+					l + COLOR_OFFSET, k + RANDOM_PARAMS_OFFSET);
 		}
-		for(int k=0; k < SampleData::getImgPosSize(); k++) {
+		for(int k=0; k < IMG_POS_SIZE; k++) {
 			m_D_pk_c[k] += mi.mutualinfo(neighbourhood,
-					l + SampleData::getColorOffset(), k + SampleData::getImgPosOffset());
+					l + COLOR_OFFSET, k + IMG_POS_OFFSET);
 		}
-		for(int k=0; k < SampleData::getFeaturesSize(); k++) {
+		for(int k=0; k < FEATURES_SIZE; k++) {
 			m_D_fk_c[k] += mi.mutualinfo(neighbourhood,
-					l + SampleData::getColorOffset(), k + SampleData::getFeaturesOffset());
+					l + COLOR_OFFSET, k + FEATURES_OFFSET);
 		}
 	}
 
 	// dependency for scene features
-	vector<vector<float>> m_D_fk_rl = vector<vector<float>>(SampleData::getFeaturesSize());
-	vector<vector<float>> m_D_fk_pl = vector<vector<float>>(SampleData::getFeaturesSize());
-	vector<vector<float>> m_D_fk_cl = vector<vector<float>>(SampleData::getFeaturesSize());
+	vector<vector<float>> m_D_fk_rl = vector<vector<float>>(FEATURES_SIZE);
+	vector<vector<float>> m_D_fk_pl = vector<vector<float>>(FEATURES_SIZE);
+	vector<vector<float>> m_D_fk_cl = vector<vector<float>>(FEATURES_SIZE);
 	std::fill(m_D_fk_rl.begin(), m_D_fk_rl.end(), vector<float>(m_D_rk_c.size()));
 	std::fill(m_D_fk_pl.begin(), m_D_fk_pl.end(), vector<float>(m_D_pk_c.size()));
 	std::fill(m_D_fk_cl.begin(), m_D_fk_cl.end(), vector<float>(3)); //three color channels
 
-	for(int k = 0; k < SampleData::getFeaturesSize(); k++) {
-		for(int l = 0; l < SampleData::getRandomParametersSize(); l++) {
+	for(int k = 0; k < FEATURES_SIZE; k++) {
+		for(int l = 0; l < RANDOM_PARAMS_SIZE; l++) {
 			m_D_fk_rl[k][l] = mi.mutualinfo(neighbourhood,
-					l + SampleData::getRandomParamsOffset(), k + SampleData::getFeaturesOffset());
+					l + RANDOM_PARAMS_OFFSET, k + FEATURES_OFFSET);
 		}
-		for(int l=0; l < SampleData::getImgPosSize(); l++) {
+		for(int l=0; l < IMG_POS_SIZE; l++) {
 			m_D_fk_pl[k][l] = mi.mutualinfo(neighbourhood,
-					l + SampleData::getImgPosOffset(), k + SampleData::getFeaturesOffset());
+					l + IMG_POS_OFFSET, k + FEATURES_OFFSET);
 		}
-		for(int l=0; l < SampleData::getColorSize(); l++) {
+		for(int l=0; l < COLOR_SIZE; l++) {
 			m_D_fk_cl[k][l] = m_D_fk_c[k]/3; // average of color channels
 		}
 	}
@@ -355,7 +355,7 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 	// set alpha for every channel to the same value
 	std::fill(alpha.begin(), alpha.end(), max(1 - (1 + 0.1f*iterStep)*W_r_c, 0.f));
 
-	for(int k=0;k<SampleData::getFeaturesSize();k++) {
+	for(int k=0;k<FEATURES_SIZE;k++) {
 		const float D_fk_r = boost::accumulate(m_D_fk_rl[k], 0.f);
 		const float D_fk_p = boost::accumulate(m_D_fk_pl[k], 0.f);
 		const float D_fk_c = boost::accumulate(m_D_fk_cl[k], 0.f);
@@ -381,14 +381,14 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 		float sum_relative_weights = 0.f;
 		for (uint j=0; j<neighbourhood.size(); j++) {
 			float dist_c = 0.f;
-			for (int k=0; k<SampleData::getColorSize(); k++) {
-				const int offset = k + SampleData::getColorOffset();
+			for (int k=0; k<COLOR_SIZE; k++) {
+				const int offset = k + COLOR_OFFSET;
 				dist_c += alpha[k] * sqr(neighbourhood[i][offset] - neighbourhood[j][offset]);
 			}
 
 			float dist_f = 0.f;
-			for (int k=0; k<SampleData::getFeaturesSize(); k++) {
-				const int offset = k + SampleData::getFeaturesOffset();
+			for (int k=0; k<FEATURES_SIZE; k++) {
+				const int offset = k + FEATURES_OFFSET;
 				dist_f += beta[k] * sqr(neighbourhood[i][offset] - neighbourhood[j][offset]);
 			}
 
@@ -475,13 +475,13 @@ void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
 	pixelMean.y = allSamples[pixelIdx].y;
 	for (int sampleOffset = 0; sampleOffset < spp; sampleOffset++) {
 		const SampleData &currentSample = allSamples[pixelIdx + sampleOffset];
-		for(int f=0;f<SampleData::getFeaturesSize();f++)
+		for(int f=0;f<FEATURES_SIZE;f++)
 		{
 			pixelMean[f] += currentSample[f];
 			pixelMeanSquare[f] += sqr(currentSample[f]);
 		}
 	}
-	for(int f=0;f<SampleData::getFeaturesSize();f++)
+	for(int f=0;f<FEATURES_SIZE;f++)
 		{
 			pixelMean[f] /= spp;
 			pixelMeanSquare[f] /= spp;
