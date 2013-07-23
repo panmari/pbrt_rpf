@@ -49,12 +49,12 @@ struct SampleData {
 
 	// Some handy accessor methods, thx @jklethinen
 	// asserts that float and int are the same length
-	static int getSize()					{ return sizeof(SampleData)/sizeof(float); }
-	void   operator+=(const SampleData& s)	{ for(int i=0;i<getSize();i++) (*this)[i] += s[i]; }
-	void   divide(int s)					{ for(int i=0;i<getSize();i++) (*this)[i] /= float(s); }
+	static uint getSize()					{ return sizeof(SampleData)/sizeof(float); }
+	void   operator+=(const SampleData& s)	{ for(uint i=0;i<getSize();i++) (*this)[i] += s[i]; }
+	void   divide(int s)					{ for(uint i=0;i<getSize();i++) (*this)[i] /= float(s); }
 	float& operator[](int i)				{ return ((float*)this)[i]; }
 	const float& operator[](int i) const	{ return ((float*)this)[i]; }
-	float sum() const						{ float s=0; for(int i=0;i<getSize();i++) s+=(*this)[i]; return s; }
+	float sum() const						{ float s=0; for(uint i=0;i<getSize();i++) s+=(*this)[i]; return s; }
 	float avg() const						{ return sum()/getSize(); }
 
 	/**

@@ -16,11 +16,16 @@
 #define NR_BUCKETS 5
 class MutualInformation {
 public:
+
+
 	float mutualinfo(const vector<SampleData> &neighbourhood, const int firstChannel, const int secondChannel) {
 		clearHistograms();
-		for (const SampleData& s: neighbourhood) {
-			int a = quantize(s[firstChannel]);
-			int b = quantize(s[secondChannel]);
+		const uint stride = SampleData::getSize();
+		const float* A = (float*)(&neighbourhood[0][firstChannel]);
+		const float* B = (float*)(&neighbourhood[0][secondChannel]);
+		for (uint i=0,j=0; j<neighbourhood.size(); i+=stride,j++) {
+			int a = quantize(A[i]);
+			int b = quantize(B[i]);
 			hist_a[a]++;
 			hist_b[b]++;
 			hist_ab[a*NR_BUCKETS+b]++;
@@ -61,7 +66,7 @@ private:
 	float hist_b[NR_BUCKETS];
 	float hist_ab[NR_BUCKETS*NR_BUCKETS];
 
-	inline int quantize(float v) {
+	inline int quantize(float v) const {
 		v = (v+2)/4;
 		v *= NR_BUCKETS-1;
 		int bucket = (int)(v + 0.5f);
