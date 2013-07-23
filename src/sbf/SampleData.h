@@ -75,6 +75,12 @@ struct SampleData {
 				s[f] = (*this)[f] + other[f];
 			return s;
 		}
+	CUDA_PREFIX SampleData operator *(const SampleData& other) const {
+				SampleData s;
+				for (int f=0; f < getLastNormalizedOffset(); f++)
+					s[f] = (*this)[f] * other[f];
+				return s;
+			}
 
 };
 
