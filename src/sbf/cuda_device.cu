@@ -37,8 +37,8 @@ struct norm : public thrust::unary_function<SampleData, SampleData>
 	__device__
 	SampleData operator()(const SampleData &sd1) {
 		SampleData s;
-		//s = sd1 - mean;
-		//s /= std;
+		s = sd1 - mean;
+		s /= std;
 	return s;
 }
 };
@@ -57,7 +57,7 @@ void normalize(std::vector<SampleData>& v) {
 		std[f] = sqrt(meanSquare[f] - mean[f]*mean[f]);
 	}
 	//TODO?
-	thrust::transform(d_v.begin(), d_v.end(), d_v.begin(), d_v.end(), norm(mean, std));
+	thrust::transform(d_v.begin(), d_v.end(), d_v.begin(), norm(mean, std));
 
 	thrust::copy(d_v.begin(), d_v.end(), v.begin());
 }

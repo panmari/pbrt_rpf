@@ -53,6 +53,7 @@
 #include "imageio.h"
 #include<boost/range/numeric.hpp>
 #include <sys/time.h>
+#include "cuda_device.h"
 
 const int BOX_SIZE[] = { 55, 35, 17, 7 };
 const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f }; // for fast prototyping, by jklethinen
@@ -276,24 +277,7 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		}
 	}
 	
-	// Normalization of neighbourhood
-	SampleData nMean, nMeanSquare, nStd;
-	nMean.reset(); nMeanSquare.reset();
-	for (int f = 0; f < SampleData::getLastNormalizedOffset(); f++) {
-		for (SampleData& s: neighbourhood) {
-			nMean[f] += s[f];
-			nMeanSquare[f] += sqr(s[f]);
-		}
-		nMean[f] /= neighbourhood.size();
-		nMeanSquare[f] /= neighbourhood.size();
-		nStd[f] = sqrt(max(0.f, nMeanSquare[f] - sqr(nMean[f])));
-	}
-	for (int f = 0; f < SampleData::getLastNormalizedOffset(); f++) {
-		float overStd = rcp(nStd[f]);
-		for (SampleData& s: neighbourhood) {
-			s[f] = (s[f] - nMean[f])*overStd;
-		}
-	}
+	normalize(neighbourhood);
 	return neighbourhood;
 }
 
