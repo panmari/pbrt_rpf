@@ -28,8 +28,8 @@
 
  */
 //debugging stuff
-#define DEBUG false
-#define DEBUG_PIXEL_NR 173+337*w
+#define DEBUG true
+#define DEBUG_PIXEL_NR 173+100*w
 //910344/spp
 //200 + 200*w
 #define DUMP_INTERMEDIATE_RESULTS true
@@ -59,9 +59,9 @@
 #include <sys/time.h>
 
 const int BOX_SIZE[] = { 55, 35, 17, 7 };
-const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f }; // for fast prototyping, by jklethinen
+//const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f }; // for fast prototyping, by jklethinen
 //const float MAX_SAMPLES_FACTOR[] = { 0.1f, 0.2f, 0.3f, 0.5f }; // by me
-//const float MAX_SAMPLES_FACTOR[] = { 0.5f, 0.5f, 0.5f, 0.5f }; // by sen
+const float MAX_SAMPLES_FACTOR[] = { 0.5f, 0.5f, 0.5f, 0.5f }; // by sen
 int MAX_SAMPLES[4];
 
 RandomParameterFilter::RandomParameterFilter(const int width, const int height,
@@ -171,6 +171,7 @@ void RandomParameterFilter::preprocessSamples() {
 			uint idx = pixelOffset + sampleOffset;
 			SampleData &s = allSamples[idx];
 			bool valid = true;
+			// invalid, if second or third origin have one component very far off
 			for (int f=0; f < 6; f++) {
 				if (s[f] > 1e10f) {
 					valid = false;

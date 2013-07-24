@@ -225,8 +225,6 @@ void RPF::Update(bool final) {
     	}
     }
 
-    TwoDArray<Color> rColImg = colImg;
-
     vector<TwoDArray<Color> > fltArray;
 
 	RandomParameterFilter rpf(xPixelCount, yPixelCount, spp, jouni, allSamples);
