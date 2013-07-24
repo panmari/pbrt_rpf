@@ -53,6 +53,8 @@
 #include "parallel.h"
 #include "progressreporter.h"
 #include "imageio.h"
+#include "MutualInformation.h"
+#include "SampleData.h"
 #include<boost/range/numeric.hpp>
 #include <sys/time.h>
 
@@ -210,7 +212,8 @@ void RandomParameterFilter::preprocessSamples() {
 		}
 	}
 	for (int i=0; i < spp - 1; i++) {
-		printf("%d pixels with %d invalid samples \n", pixelWithInvalidSamplesCount[i], i + 1);
+		if (pixelWithInvalidSamplesCount[i])
+			printf("%d pixels with %d invalid samples \n", pixelWithInvalidSamplesCount[i], i + 1);
 	}
 	printf("Done! \n");
 }
