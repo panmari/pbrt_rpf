@@ -11,10 +11,10 @@
 #include <fstream>
 
 #include "core/pbrt.h"
-#include "sbf/RandomParameterFilter.h"
-#include "sbf/SampleData.h"
+#include "rpf/RandomParameterFilter.h"
+#include "rpf/SampleData.h"
 #include "core/imageio.h"
-#include "sbf/VectorNf.h"
+#include "filter_utils/VectorNf.h"
 using namespace std;
 
 inline float sqr(float a) {return a*a;};

@@ -39,7 +39,7 @@
 #define SBF_SBF_COMMON_H__
 
 #include "pbrt.h"
-#include "VectorNf.h"
+#include "filter_utils/VectorNf.h"
 
 const int c_FeatureDim = 7;
 typedef VectorNf<c_FeatureDim> Feature; // normal:3d, rho:3d, depth:1d

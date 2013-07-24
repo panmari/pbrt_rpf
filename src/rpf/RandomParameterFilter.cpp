@@ -47,7 +47,9 @@
 
 #include "RandomParameterFilter.h"
 
-#include "fmath.hpp"
+#include "filter_utils/fmath.hpp"
+#include "filter_utils/VectorNf.h"
+
 #include "parallel.h"
 #include "progressreporter.h"
 #include "imageio.h"
@@ -81,7 +83,7 @@ void RandomParameterFilter::Apply() {
 	preprocessSamples();
 
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
-		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + to_string(iterStep + 1) + " of 4");
+		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + std::to_string(iterStep + 1) + " of 4");
 		if (DEBUG) fprintf(debugLog, "\n*** Starting pass number %d ***\n", iterStep);
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
 #if DEBUG
@@ -158,6 +160,7 @@ void RandomParameterFilter::dumpIntermediateResults(int iterStep) {
  */
 void RandomParameterFilter::preprocessSamples() {
 	printf("Preprocessing... \n");
+	vector<int> pixelWithInvalidSamplesCount(spp);
 	for (uint pixelOffset = 0; pixelOffset < allSamples.size(); pixelOffset+= spp) {
 		SampleData pixelValidSamplesMean;
 		pixelValidSamplesMean.reset();
@@ -181,8 +184,8 @@ void RandomParameterFilter::preprocessSamples() {
 		}
 		if (validSamplesIdx.size() > 0)
 			pixelValidSamplesMean.divide(validSamplesIdx.size());
-		if (validSamplesIdx.size() < spp/2)
-			printf("Pixel has only %lu valid samples \n", validSamplesIdx.size());
+		if (invalidSamplesIdx.size() > 0)
+			pixelWithInvalidSamplesCount[invalidSamplesIdx.size() - 1]++;
 		for (uint invalidSampleIdx: invalidSamplesIdx) {
 			SampleData &s = allSamples[invalidSampleIdx];
 			if (validSamplesIdx.size() > 0) {
@@ -205,6 +208,9 @@ void RandomParameterFilter::preprocessSamples() {
 				s.y = invS.y;
 			}
 		}
+	}
+	for (int i=0; i < spp - 1; i++) {
+		printf("%d pixels with %d invalid samples \n", pixelWithInvalidSamplesCount[i], i + 1);
 	}
 	printf("Done! \n");
 }

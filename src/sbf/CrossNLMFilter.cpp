@@ -33,7 +33,7 @@
 
 #include "CrossNLMFilter.h"
 
-#include "fmath.hpp"
+#include "filter_utils/fmath.hpp"
 #include "parallel.h"
 
 const float c_VarMax = 1e-2f;

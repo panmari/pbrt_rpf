@@ -40,7 +40,7 @@
 
 #include "pbrt.h"
 #include "SBFCommon.h"
-#include "TwoDArray.h"
+#include "filter_utils/TwoDArray.h"
 #include "filter.h"
 
 enum FilterType {

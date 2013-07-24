@@ -40,9 +40,7 @@
 #include "progressreporter.h"
 #include "CrossBilateralFilter.h"
 #include "CrossNLMFilter.h"
-#include "RandomParameterFilter.h"
-
-#include "fmath.hpp"
+#include "filter_utils/fmath.hpp"
 
 #include <limits>
 #include <algorithm>
@@ -58,18 +56,17 @@ SBF::SBF(int xs, int ys, int w, int h,
          const vector<float> &_interParams,
          const vector<float> &_finalParams,
          float _sigmaN, float _sigmaR, float _sigmaD,
-         float _interMseSigma, float _finalMseSigma, float _jouni) :
+         float _interMseSigma, float _finalMseSigma) :
     fType(type), rFilter(filt),  
     interParams(_interParams), finalParams(_finalParams),
     sigmaN(_sigmaN), sigmaR(_sigmaR), sigmaD(_sigmaD),
-    interMseSigma(_interMseSigma), finalMseSigma(_finalMseSigma), jouni(_jouni) {
+    interMseSigma(_interMseSigma), finalMseSigma(_finalMseSigma) {
     xPixelStart = xs;
     yPixelStart = ys;
     xPixelCount = w;
     yPixelCount = h;
-    spp = 4;
     pixelInfos = new BlockedArray<PixelInfo>(xPixelCount, yPixelCount);
-    allSamples = vector<SampleData> (spp*xPixelCount*yPixelCount);
+
     colImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     varImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     featureImg = TwoDArray<Feature>(xPixelCount, yPixelCount);
@@ -86,55 +83,40 @@ SBF::SBF(int xs, int ys, int w, int h,
     minMseImg = TwoDArray<float>(xPixelCount, yPixelCount);
     adaptImg = TwoDArray<float>(xPixelCount, yPixelCount);
     sigmaImg = TwoDArray<Color>(xPixelCount, yPixelCount);
-
-    //new:
-    secNormalImg = TwoDArray<Color>(xPixelCount, yPixelCount);
-    secOrigImg = TwoDArray<Color>(xPixelCount, yPixelCount);
-    thirdOrigImg = TwoDArray<Color>(xPixelCount, yPixelCount);
-    lensImg = TwoDArray<Color>(xPixelCount, yPixelCount);
-    timeImg = TwoDArray<float>(xPixelCount, yPixelCount);
-    sampleCount = -1;
 }
 
 void SBF::AddSample(const CameraSample &sample, const Spectrum &L, 
                     const Intersection &isect) {    
-    int x = sample.x-xPixelStart;
-    int y = sample.y-yPixelStart;
+    int x = Floor2Int(sample.imageX)-xPixelStart;
+    int y = Floor2Int(sample.imageY)-yPixelStart;
     // Check if the sample is in the image
-    if (x < 0 || y < 0 || x >= xPixelCount || y >= yPixelCount)  {
+    if (x < 0 || y < 0 || x >= xPixelCount || y >= yPixelCount)
         return;    
-    }
+
+    // Update PixelInfo structure
+    PixelInfo &pixelInfo = (*pixelInfos)(x, y);
+
     // Convert to 3d color space from Spectrum
     float xyz[3];
     L.ToRGB(xyz);
     float rhoXYZ[3];
     isect.rho.ToRGB(rhoXYZ);
 
-    int idx = AtomicAdd(&sampleCount, 1);
-    SampleData& sd = allSamples[idx];
-    sd.x = x;
-    sd.y = y;
-    float frdLength = 0.f;
+    // TODO: does AtomicAdd really needed?
     for(int i = 0; i < 3; i++) {
-    	//bit dangerous to also apply this to output color, but useful for debugging
-    	sd.outputColors[i] = sd.inputColors[i] = sd.rgb[i] = xyz[i];
-    	sd.rho[i] = rhoXYZ[i];
-    	sd.normal[i] = isect.shadingN[i];
-    	sd.secondNormal[i] = isect.secondNormal[i];
-    	sd.secondOrigin[i] = isect.secondOrigin[i];
-    	sd.thirdOrigin[i] = isect.thirdOrigin[i];
-    	sd.firstReflectionDir[i] = sd.thirdOrigin[i] - sd.secondOrigin[i];
-    	frdLength += sd.firstReflectionDir[i]*sd.firstReflectionDir[i];
+        AtomicAdd(&(pixelInfo.Lxyz[i]), xyz[i]);
+        AtomicAdd(&(pixelInfo.sqLxyz[i]), xyz[i]*xyz[i]);
+        AtomicAdd(&(pixelInfo.rho[i]), rhoXYZ[i]);
+        AtomicAdd(&(pixelInfo.sqRho[i]), rhoXYZ[i]*rhoXYZ[i]);
+        // Sometimes pbrt returns NaN normals, we simply ignore them here
+        if(!isect.shadingN.HasNaNs()) {
+            AtomicAdd(&(pixelInfo.normal[i]), isect.shadingN[i]);
+            AtomicAdd(&(pixelInfo.sqNormal[i]), isect.shadingN[i]*isect.shadingN[i]);
+        }
     }
-    // normalize firstReflectionDir
-    frdLength = sqrt(frdLength);
-    for (int i = 0; i < 3; i++)
-    	sd.firstReflectionDir[i] /= frdLength;
-    sd.imgPos[0] = sample.imageX;
-    sd.imgPos[1] = sample.imageY;
-    sd.lensPos[0] = sample.lensU;
-    sd.lensPos[1] = sample.lensV;
-	sd.time = sample.time;
+    AtomicAdd(&(pixelInfo.depth), isect.depth);
+    AtomicAdd(&(pixelInfo.sqDepth), isect.depth*isect.depth);
+    AtomicAdd((AtomicInt32*)&(pixelInfo.sampleCount), (int32_t)1);
 }
 
 void SBF::GetAdaptPixels(int spp, vector<vector<int> > &pixels) {
@@ -180,14 +162,21 @@ float SBF::CalculateAvgSpp() const {
 void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
     Update(true);
 
-    ProgressReporter reporter(1, "Dumping images");
-    string filenameBase = filename.substr(0, filename.rfind(".")) + "_jouni_" + std::to_string(jouni);
+    string filenameBase = filename.substr(0, filename.rfind("."));
     string filenameExt  = filename.substr(filename.rfind("."));
 
-    //printf("Avg spp: %.2f\n", CalculateAvgSpp());
+    printf("Avg spp: %.2f\n", CalculateAvgSpp());
 
     WriteImage(filenameBase+"_sbf_img"+filenameExt, colImg, xres, yres);
     WriteImage(filenameBase+"_sbf_flt"+filenameExt, fltImg, xres, yres);
+    TwoDArray<Color> sImg = TwoDArray<Color>(xPixelCount, yPixelCount);
+    for(int y = 0; y < yPixelCount; y++)
+        for(int x = 0; x < xPixelCount; x++) {
+            float sc = (float)(*pixelInfos)(x, y).sampleCount;
+            sImg(x, y) = Color(sc, sc, sc);
+        }
+    WriteImage(filenameBase+"_sbf_smp"+filenameExt, sImg, xres, yres);
+    WriteImage(filenameBase+"_sbf_param"+filenameExt, sigmaImg, xres, yres);
 
     if(dump) { // Write debug images
         WriteImage(filenameBase+"_sbf_var"+filenameExt, varImg, xres, yres);
@@ -197,24 +186,18 @@ void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
             for(int x = 0; x < norImg.GetColNum(); x++) {
                 norImg(x, y) += Color(1.f, 1.f, 1.f);
                 norImg(x, y) /= 2.f;
-                secNormalImg(x, y) += Color(1.f, 1.f, 1.f);
-                secNormalImg(x, y) /= 2.f;
             }
         WriteImage(filenameBase+"_sbf_nor"+filenameExt, norImg, xres, yres);
 
+        WriteImage(filenameBase+"_sbf_nor_var"+filenameExt, norVarImg, xres, yres);
         WriteImage(filenameBase+"_sbf_rho"+filenameExt, rhoImg, xres, yres);
+        WriteImage(filenameBase+"_sbf_rho_var"+filenameExt, rhoVarImg, xres, yres);
 
-        //new:
-        WriteImage(filenameBase+"_sbf_second_normal"+filenameExt, secNormalImg, xres, yres);
-        WriteImage(filenameBase+"_sbf_second_orig"+filenameExt, secOrigImg, xres, yres);
-        WriteImage(filenameBase+"_sbf_third_orig"+filenameExt, thirdOrigImg, xres, yres);
-        WriteImage(filenameBase+"_sbf_lens"+filenameExt, lensImg, xres, yres);
-        TwoDArray<Color> timeColImg = FloatImageToColor(timeImg);
-        WriteImage(filenameBase+"_sbf_time"+filenameExt, timeColImg, xres, yres);
+        TwoDArray<Color> depthColImg = FloatImageToColor(depthImg);
+        TwoDArray<Color> dvColImg = FloatImageToColor(depthVarImg);
+        WriteImage(filenameBase+"_sbf_dep"+filenameExt, depthColImg, xres, yres);
+        WriteImage(filenameBase+"_sbf_dep_var"+filenameExt, dvColImg, xres, yres);
     }
-
-    reporter.Update();
-    reporter.Done();
 }
 
 void SBF::WriteImage(const string &filename, const TwoDArray<Color> &image, int xres, int yres) const {
@@ -233,49 +216,66 @@ TwoDArray<Color> SBF::FloatImageToColor(const TwoDArray<float> &image) const {
 }
 
 void SBF::Update(bool final) {
-	ProgressReporter reporter(2, "Sorting samples...");
-    std::sort(allSamples.begin(), allSamples.end());
-    reporter.Done();
+    ProgressReporter reporter(1, "Updating");
+
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
-    for(uint i = 0; i < allSamples.size(); i++) {
-		SampleData sd = allSamples[i];
+    for(int y = 0; y < yPixelCount; y++)
+        for(int x = 0;x < xPixelCount; x++) {
+            PixelInfo &pixelInfo = (*pixelInfos)(x, y);
+            float invSampleCount = 1.f/(float)pixelInfo.sampleCount;
+            float invSampleCount_1 = 1.f/((float)pixelInfo.sampleCount-1.f);
+            Color colSum = Color(pixelInfo.Lxyz);
+            Color sqColSum = Color(pixelInfo.sqLxyz);
+            Color colMean = colSum*invSampleCount;
+            Color colVar = (sqColSum - colSum*colMean) *
+                           invSampleCount_1 * invSampleCount;
 
-		int x = sd.x;
-		int y = sd.y;
+            Color norSum = Color(pixelInfo.normal);
+            Color sqNorSum = Color(pixelInfo.sqNormal);
+            Color norMean = norSum*invSampleCount;
+            Color norVar = (sqNorSum - norSum*norMean) *
+                           invSampleCount_1;
 
-		Color rgbC = Color(sd.rgb); //color in RGB
-		Color normalC = Color(sd.normal);
+            Color rhoSum = Color(pixelInfo.rho);
+            Color sqRhoSum = Color(pixelInfo.sqRho);
+            Color rhoMean = rhoSum*invSampleCount;
+            Color rhoVar = (sqRhoSum - rhoSum*rhoMean) *
+                           invSampleCount_1;
 
-		Color rhoC = Color(sd.rho);
+            float depthSum = pixelInfo.depth;
+            float sqDepthSum = pixelInfo.sqDepth;
+            float depthMean = depthSum * invSampleCount;
+            float depthVar = (sqDepthSum - depthSum*depthMean) *
+                             invSampleCount_1;
 
-		//new
-		Color secNormalC = Color(sd.secondNormal);
-		Color secOriginC = Color(sd.secondOrigin);
-		Color thirdOriginC = Color(sd.thirdOrigin);
-		Color lensC = Color(sd.lensPos[0], sd.lensPos[1], 0.f);
+            colImg(x, y) = colMean;
+            varImg(x, y) = colVar;
+            norImg(x, y) = norMean;
+            norVarImg(x, y) = norVar;
+            rhoImg(x, y) = rhoMean;
+            rhoVarImg(x, y) = rhoVar;
+            depthImg(x, y) = depthMean;
+            depthVarImg(x, y) = depthVar;
 
-		colImg(x, y) += rgbC;
-		norImg(x, y) += normalC;
-		rhoImg(x, y) += rhoC;
-		//new
-		secNormalImg(x, y) += secNormalC;
-		secOrigImg(x, y) += secOriginC;
-		thirdOrigImg(x, y) += thirdOriginC;
-		lensImg(x, y) += lensC;
-	}
-    reporter.Update(1);
-    for (int y=0; y < yPixelCount; y++) {
-    	for (int x = 0; x < xPixelCount; x++) {
-    		colImg(x, y) /= spp;
-			norImg(x, y) /= spp;
-			rhoImg(x, y) /= spp;
-			//new
-			secNormalImg(x, y) /= spp;
-			secOrigImg(x, y) /= spp;
-			thirdOrigImg(x, y) /= spp;
-			lensImg(x, y) /= spp;
-    	}
-    }
+            Feature feature, featureVar;
+            feature[0] = norMean[0];
+            feature[1] = norMean[1];
+            feature[2] = norMean[2];
+            feature[3] = rhoMean[0];
+            feature[4] = rhoMean[1];
+            feature[5] = rhoMean[2];
+            feature[6] = depthMean;
+            featureVar[0] = norVar[0];
+            featureVar[1] = norVar[1];
+            featureVar[2] = norVar[2];
+            featureVar[3] = rhoVar[0];
+            featureVar[4] = rhoVar[1];
+            featureVar[5] = rhoVar[2];
+            featureVar[6] = depthVar;
+
+            featureImg(x, y) = feature;
+            featureVarImg(x, y) = featureVar;
+        }
 
     TwoDArray<Color> rColImg = colImg;
     /**
@@ -283,7 +283,7 @@ void SBF::Update(bool final) {
      *  but apply filtering on the 1x1 box filtered image.
      *  We found that this gives sharper result and smoother filter selection
      */
-    //rFilter.Apply(rColImg);
+    rFilter.Apply(rColImg);
     /**
      *  Theoratically, we should use squared kernel to filter variance,
      *  however we found that it will produce undersmoothed image(this is
@@ -291,7 +291,7 @@ void SBF::Update(bool final) {
      *  estimation, so we did not consider the covariances between pixels)
      *  Therefore we reconstruct the variance with the original filter.      
      */
-    //rFilter.Apply(varImg);
+    rFilter.Apply(varImg);
 
     // We reconstruct feature buffers with 1x1 box filter as it gives us sharper result
     // In the case that the feature buffers are very noisy like heavy DOF or very fast
@@ -326,7 +326,7 @@ void SBF::Update(bool final) {
         CrossBilateralFilter mseFilter(final ? finalMseSigma : interMseSigma, 0.f, 
                                        sigmaF, xPixelCount, yPixelCount); 
         mseFilter.ApplyMSE(mseArray, featureImg, featureVarImg, fltMseArray);
-    } else if (fType == CROSS_NLM_FILTER) {
+    } else { //fType == CROSS_NLM_FILTER
         CrossNLMFilter nlmFilter(final ? 20 : 10, 2, sigma, sigmaF, 
                 xPixelCount, yPixelCount);
         nlmFilter.Apply(colImg, featureImg, featureVarImg, 
@@ -336,20 +336,24 @@ void SBF::Update(bool final) {
                                        sigmaF, xPixelCount, yPixelCount);   
         mseFilter.ApplyMSE(mseArray, featureImg, featureVarImg, fltMseArray);
         //filter.ApplyMSE(0.04f, mseArray, rColImg, featureImg, featureVarImg, fltMseArray);
-    } else { //fType == RANDOM_PARAMETER_FILTER
-    	RandomParameterFilter rpf(xPixelCount, yPixelCount, spp, jouni, allSamples);
-    	rpf.Apply();
     }
 
-    for (uint i=0; i < allSamples.size(); i+=spp) {
-    	Color c;
-    	for (int j=0; j<spp; j++)
-    		for(int k=0; k<3;k++){
-    			c[k] += allSamples[i+j].outputColors[k];
-    		}
-    	c /= spp;
-    	fltImg(allSamples[i].x, allSamples[i].y) = c;
+    minMseImg = numeric_limits<float>::infinity();
+    for(size_t i = 0; i < sigma.size(); i++) {
+#pragma omp parallel for num_threads(PbrtOptions.nCores)
+        for(int y = 0; y < yPixelCount; y++)
+            for(int x = 0; x < xPixelCount; x++) {
+                float error = fltMseArray[i](x, y);
+                if(error < minMseImg(x, y)) {
+                    Color c = fltArray[i](x, y);
+                    adaptImg(x, y) = error/(c.Y()*c.Y()+1e-3f);
+                    minMseImg(x, y) = error;
+                    fltImg(x, y) = c;
+                    sigmaImg(x, y) = Color((float)i/(float)sigma.size());
+                }
+            }
     }
 
+    reporter.Update();
+    reporter.Done();
 }
-

@@ -37,8 +37,7 @@
 #ifndef SBF_RANDOM_PARAMETER_FILTER_H__
 #define SBF_RANDOM_PARAMETER_FILTER_H__
 
-#include "SBFCommon.h"
-#include "TwoDArray.h"
+#include "filter_utils/TwoDArray.h"
 #include "pbrt.h"
 #include "SampleData.h"
 #include "rng.h"

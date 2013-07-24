@@ -33,7 +33,7 @@
 
 #include "CrossBilateralFilter.h"
 
-#include "fmath.hpp"
+#include "filter_utils/fmath.hpp"
 #include "parallel.h"
 
 /**

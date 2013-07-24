@@ -7,7 +7,7 @@ Film "sbfimage"
     "string filename"        ["sibenik_rpf.exr"]
     "bool dumpfeaturebuffer" ["false"]
     "string filter"          ["rpf"] # rpf-> Random Parameter Filter
-    "float jouni"		[0.01]
+    "float jouni"		[0.02]
 
 
 #Sampler "lowdiscrepancy" "integer pixelsamples" [8]

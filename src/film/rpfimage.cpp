@@ -30,50 +30,46 @@
 
 // film/sbfimage.cpp*
 #include "stdafx.h"
-#include "film/sbfimage.h"
 #include "spectrum.h"
 #include "parallel.h"
 #include "imageio.h"
 #include "intersection.h"
 #include "progressreporter.h"
+#include "rpfimage.h"
+#include "rpf/rpf.h"
 
 // SBFImageFilm Method Definitions
-SBFImageFilm::SBFImageFilm(int xres, int yres, Filter *filt, const float crop[4],
-                     const string &fn, bool dp, SBF::FilterType type, 
-                     const vector<float> &interParams, const vector<float> &finalParams,
-                     float sigmaN, float sigmaR, float sigmaD,
-                     float interMseSigma, float finalMseSigma)
+RPFImageFilm::RPFImageFilm(int xres, int yres, Filter *filt, const float crop[4],
+                     const string &fn, bool dp, float jouni)
     : Film(xres, yres) {
-    filter = filt;
+	filter = filt;
     memcpy(cropWindow, crop, 4 * sizeof(float));
     filename = fn;
     // Compute film image extent
     xPixelStart = Ceil2Int(xResolution * cropWindow[0]);
     xPixelCount = max(1, Ceil2Int(xResolution * cropWindow[1]) - xPixelStart);
     yPixelStart = Ceil2Int(yResolution * cropWindow[2]);
-    yPixelCount = max(1, Ceil2Int(yResolution * cropWindow[3]) - yPixelStart);   
+    yPixelCount = max(1, Ceil2Int(yResolution * cropWindow[3]) - yPixelStart);
 
     dump = dp;
-    sbf = new SBF(xPixelStart, yPixelStart, xPixelCount, yPixelCount, 
-                  filter, type, interParams, finalParams, 
-                  sigmaN, sigmaR, sigmaD, interMseSigma, finalMseSigma);
+    rpf = new RPF(xPixelStart, yPixelStart, xPixelCount, yPixelCount, jouni);
 }
 
 
-void SBFImageFilm::AddSample(const CameraSample &sample,
+void RPFImageFilm::AddSample(const CameraSample &sample,
                           const Spectrum &L,
                           const Intersection &isect) {
-    sbf->AddSample(sample, L, isect);
+    rpf->AddSample(sample, L, isect);
 }
 
 
-void SBFImageFilm::Splat(const CameraSample &sample, const Spectrum &L) {
+void RPFImageFilm::Splat(const CameraSample &sample, const Spectrum &L) {
     // TODO: Implement splatting
     Warning("[SBFImageFilm] Splatting is currently not supported");
 }
 
 
-void SBFImageFilm::GetSampleExtent(int *xstart, int *xend,
+void RPFImageFilm::GetSampleExtent(int *xstart, int *xend,
                                 int *ystart, int *yend) const {
     *xstart = Floor2Int(xPixelStart + 0.5f - filter->xWidth);
     *xend   = Ceil2Int(xPixelStart + 0.5f + xPixelCount  +
@@ -85,7 +81,7 @@ void SBFImageFilm::GetSampleExtent(int *xstart, int *xend,
 }
 
 
-void SBFImageFilm::GetPixelExtent(int *xstart, int *xend,
+void RPFImageFilm::GetPixelExtent(int *xstart, int *xend,
                                int *ystart, int *yend) const {
     *xstart = xPixelStart;
     *xend   = xPixelStart + xPixelCount;
@@ -94,22 +90,22 @@ void SBFImageFilm::GetPixelExtent(int *xstart, int *xend,
 }
 
 
-void SBFImageFilm::WriteImage(float splatScale) {
-    sbf->WriteImage(filename, xResolution, yResolution, dump);
+void RPFImageFilm::WriteImage(float splatScale) {
+    rpf->WriteImage(filename, xResolution, yResolution, dump);
 }
 
-void SBFImageFilm::GetAdaptPixels(int spp, vector<vector<int> > &pixels) {
-    sbf->GetAdaptPixels(spp, pixels);
+void RPFImageFilm::GetAdaptPixels(int spp, vector<vector<int> > &pixels) {
+    rpf->GetAdaptPixels(spp, pixels);
 }
 
-SBFImageFilm *CreateSBFImageFilm(const ParamSet &params, Filter *filter) {
+RPFImageFilm *CreateRPFImageFilm(const ParamSet &params, Filter *filt) {
     string filename = params.FindOneString("filename", PbrtOptions.imageFile);
     if (filename == "")
 #ifdef PBRT_HAS_OPENEXR
         filename = "pbrt.exr";
 #else
         filename = "pbrt.tga";
-#endif        
+#endif
 
     int xres = params.FindOneInt("xresolution", 640);
     int yres = params.FindOneInt("yresolution", 480);
@@ -125,44 +121,11 @@ SBFImageFilm *CreateSBFImageFilm(const ParamSet &params, Filter *filter) {
         crop[3] = Clamp(max(cr[2], cr[3]), 0., 1.);
     }
     bool debug = params.FindOneBool("dumpfeaturebuffer", false);
-    string filterType = params.FindOneString("filter", "cbf");
-    SBF::FilterType type;
-    if(filterType == "cbf") {
-        type = SBF::CROSS_BILATERAL_FILTER;
-    } else if(filterType == "cnlmf") {
-        type = SBF::CROSS_NLM_FILTER;
-    } else {
-        Warning("[SBFFilm] Unsuporrted filter type, set to default.");
-        type = SBF::CROSS_BILATERAL_FILTER;
-    }
 
-    int nInterParams = 0;
-    const float *interParams = params.FindFloat("interparams", &nInterParams);
-    vector<float> interParamsV;
-    if(nInterParams == 0) {
-        interParamsV.push_back(0.f);
-    } else {
-        for(int i = 0; i < nInterParams; i++)
-            interParamsV.push_back(interParams[i]);
-    }
-    int nFinalParams = 0;
-    const float *finalParams = params.FindFloat("finalparams", &nFinalParams);
-    vector<float> finalParamsV;
-    if(nFinalParams == 0) {
-        finalParamsV.push_back(0.f);
-    } else {
-        for(int i = 0; i < nFinalParams; i++)
-            finalParamsV.push_back(finalParams[i]);
-    }
+    float jouni = params.FindOneFloat("jouni", 0.02f);
+    //TODO: add more parameters?
 
-    float sigmaN = params.FindOneFloat("sigman", 0.8f);
-    float sigmaR = params.FindOneFloat("sigmar", 0.25f);
-    float sigmaD = params.FindOneFloat("sigmad", 0.6f);
-    float interMseSigma = params.FindOneFloat("intermsesigma", 4.f);
-    float finalMseSigma = params.FindOneFloat("finalmsesigma", 8.f);
-
-    return new SBFImageFilm(xres, yres, filter, crop, filename, 
-                            debug, type, interParamsV, finalParamsV,
-                            sigmaN, sigmaR, sigmaD,
-                            interMseSigma, finalMseSigma);
+    return new RPFImageFilm(xres, yres, filt, crop, filename,
+                            debug, jouni);
 }
+

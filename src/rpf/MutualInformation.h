@@ -9,6 +9,7 @@
 #define MUTUALINFO_H_
 #include "SampleData.h"
 #include <vector>
+#include "filter_utils/fmath.hpp"
 /**
  * Again heavily inspired by jklethinens code.
  * You must make an instance of this (instead of static), so memory for histograms only needs to be assigned once.
@@ -36,18 +37,18 @@ public:
 		for (int i = 0; i < NR_BUCKETS; i++) {
 			if(hist_a[i]) {
 				float prob_a = hist_a[i]/neighbourhood.size();
-				ent_a += -prob_a*log2f(prob_a);
+				ent_a += -prob_a * fmath::log2(prob_a);
 			}
 			if(hist_b[i]) {
 				float prob_b = hist_b[i]/neighbourhood.size();
-				ent_b += -prob_b*log2f(prob_b);
+				ent_b += -prob_b * fmath::log2(prob_b);
 			}
 		}
 		float ent_ab = 0.f;
 		for (int i = 0; i < NR_BUCKETS*NR_BUCKETS; i++) {
 			if(hist_ab[i]) {
 				float prob_ab = hist_ab[i]/neighbourhood.size();
-				ent_ab += -prob_ab*log2f(prob_ab);
+				ent_ab += -prob_ab * fmath::log2(prob_ab);
 			}
 		}
 		return ent_a + ent_b - ent_ab;

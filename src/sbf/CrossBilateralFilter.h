@@ -39,8 +39,8 @@
 #define SBF_CROSS_BILATERAL_FILTER_H__
 
 #include "SBFCommon.h"
-#include "TwoDArray.h"
-#include "VectorNf.h"
+#include "filter_utils/TwoDArray.h"
+#include "filter_utils/VectorNf.h"
 #include "pbrt.h"
 
 class CrossBilateralFilter {

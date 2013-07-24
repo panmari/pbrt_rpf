@@ -32,10 +32,9 @@
 #pragma once
 #endif
 
-#ifndef PBRT_SBF_FILM_IMAGE_H
-#define PBRT_SBF_FILM_IMAGE_H
+#ifndef PBRT_RPF_FILM_IMAGE_H
+#define PBRT_RPF_FILM_IMAGE_H
 
-// film/image.h*
 #include "pbrt.h"
 #include "film.h"
 #include "sampler.h"
@@ -43,20 +42,16 @@
 #include "paramset.h"
 #include "parallel.h"
 
-#include "sbf/sbf.h"
+#include "rpf/rpf.h"
 
-class SBFImageFilm : public Film {
+class RPFImageFilm : public Film {
 public:
-    // SBFImageFilm Public Methods
-    SBFImageFilm(int xres, int yres, Filter *filt, const float crop[4],
-              const string &filename, bool dp, SBF::FilterType type, 
-              const vector<float> &interParams, const vector<float> &finalParams,
-              float sigmaN, float sigmaR, float sigmaD,
-              float interMseSigmaS, float finalMseSigmaS);
-    ~SBFImageFilm() {
-        delete sbf;
+    RPFImageFilm(int xres, int yres, Filter *filt, const float crop[4],
+              const string &filename, bool dp, const float jouni);
+    ~RPFImageFilm() {
+        delete rpf;
     }
-    void AddSample(const CameraSample &sample, const Spectrum &L, 
+    void AddSample(const CameraSample &sample, const Spectrum &L,
             const Intersection &isect);
     void Splat(const CameraSample &sample, const Spectrum &L);
     void GetSampleExtent(int *xstart, int *xend, int *ystart, int *yend) const;
@@ -64,18 +59,18 @@ public:
     void WriteImage(float splatScale);
     void UpdateDisplay(int x0, int y0, int x1, int y1, float splatScale) {}
     void GetAdaptPixels(int spp, vector<vector<int> > &pixels);
-    void SetSPP(int s) { /*Do nothing here */};
+    void SetSPP(int spp) { rpf->SetSPP(spp); }
 private:
     // SBFImageFilm Private Data
     Filter *filter;
     float cropWindow[4];
     string filename;
     int xPixelStart, yPixelStart, xPixelCount, yPixelCount;
-    
-    SBF *sbf;
+
+    RPF *rpf;
     bool dump;
 };
 
-SBFImageFilm *CreateSBFImageFilm(const ParamSet &params, Filter *filter);
+RPFImageFilm *CreateRPFImageFilm(const ParamSet &params, Filter *filter);
 
-#endif // PBRT_SBF_FILM_IMAGE_H
+#endif // PBRT_RPF_FILM_IMAGE_H

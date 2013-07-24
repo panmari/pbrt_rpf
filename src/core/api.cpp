@@ -51,6 +51,7 @@
 #include "cameras/perspective.h"
 #include "film/image.h"
 #include "film/sbfimage.h"
+#include "film/rpfimage.h"
 #include "filters/box.h"
 #include "filters/gaussian.h"
 #include "filters/mitchell.h"
@@ -672,6 +673,8 @@ Film *MakeFilm(const string &name,
         film = CreateImageFilm(paramSet, filter);
     else if (name == "sbfimage")
         film = CreateSBFImageFilm(paramSet, filter);
+    else if (name == "rpfimage")
+        film = CreateRPFImageFilm(paramSet, filter);
     else
         Warning("Film \"%s\" unknown.", name.c_str());
     paramSet.ReportUnused();
