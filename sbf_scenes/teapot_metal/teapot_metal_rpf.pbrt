@@ -2,12 +2,11 @@
 LookAt 18 5.5 2    15.5 .9 10   0 1 0
 Camera "perspective" "float fov" [40]
 
-Film "sbfimage" 
+Film "rpfimage" 
      "integer xresolution"  [800]
 	 "integer yresolution"  [800]
 	 "string filename"  ["teapot_metal_rpf.exr"]
      "bool dumpfeaturebuffer" ["false"]
-     "string filter"          ["rpf"] # cbf-> Cross Bilateral Filter
 
 Sampler "lowdiscrepancy" "integer pixelsamples" [8]
 SurfaceIntegrator "path" "integer maxdepth" [1]
