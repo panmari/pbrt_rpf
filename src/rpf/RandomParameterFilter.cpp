@@ -400,7 +400,7 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 				dist_f += beta[k] * sqr(neighbourhood[i][offset] - neighbourhood[j][offset]);
 			}
 
-			const float w_ij = exp(scale_c*dist_c + scale_f*dist_f);
+			const float w_ij = fmath::exp(scale_c*dist_c + scale_f*dist_f);
 			sum_relative_weights += w_ij;
 			for (int k=0; k < 3; k++) {
 				color[k] += neighbourhood[j].inputColors[k]*w_ij; //should not be normalized, check?
