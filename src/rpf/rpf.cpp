@@ -131,13 +131,13 @@ void RPF::WriteImage(const string &filename, int xres, int yres, bool dump) {
     Update(true);
 
     ProgressReporter reporter(1, "Dumping images");
-    string filenameBase = filename.substr(0, filename.rfind(".")) + "_jouni_" + std::to_string(jouni);
+    string filenameBase = filename.substr(0, filename.rfind(".")) + "_jouni_" + std::to_string(jouni).substr(2,3);
     string filenameExt  = filename.substr(filename.rfind("."));
 
     //printf("Avg spp: %.2f\n", CalculateAvgSpp());
 
-    WriteImage(filenameBase+"_sbf_img"+filenameExt, colImg, xres, yres);
-    WriteImage(filenameBase+"_sbf_flt"+filenameExt, fltImg, xres, yres);
+    WriteImage(filenameBase+"_rpf_img"+filenameExt, colImg, xres, yres);
+    WriteImage(filenameBase+"_rpf_flt"+filenameExt, fltImg, xres, yres);
 
     if(dump) { // Write debug images
         // Normals contain negative values, normalize them here
@@ -148,17 +148,17 @@ void RPF::WriteImage(const string &filename, int xres, int yres, bool dump) {
                 secNormalImg(x, y) += Color(1.f, 1.f, 1.f);
                 secNormalImg(x, y) /= 2.f;
             }
-        WriteImage(filenameBase+"_sbf_nor"+filenameExt, norImg, xres, yres);
+        WriteImage(filenameBase+"_rpf_nor"+filenameExt, norImg, xres, yres);
 
-        WriteImage(filenameBase+"_sbf_rho"+filenameExt, rhoImg, xres, yres);
+        WriteImage(filenameBase+"_rpf_rho"+filenameExt, rhoImg, xres, yres);
 
         //new:
-        WriteImage(filenameBase+"_sbf_second_normal"+filenameExt, secNormalImg, xres, yres);
-        WriteImage(filenameBase+"_sbf_second_orig"+filenameExt, secOrigImg, xres, yres);
-        WriteImage(filenameBase+"_sbf_third_orig"+filenameExt, thirdOrigImg, xres, yres);
-        WriteImage(filenameBase+"_sbf_lens"+filenameExt, lensImg, xres, yres);
+        WriteImage(filenameBase+"_rpf_second_normal"+filenameExt, secNormalImg, xres, yres);
+        WriteImage(filenameBase+"_rpf_second_orig"+filenameExt, secOrigImg, xres, yres);
+        WriteImage(filenameBase+"_rpf_third_orig"+filenameExt, thirdOrigImg, xres, yres);
+        WriteImage(filenameBase+"_rpf_lens"+filenameExt, lensImg, xres, yres);
         TwoDArray<Color> timeColImg = FloatImageToColor(timeImg);
-        WriteImage(filenameBase+"_sbf_time"+filenameExt, timeColImg, xres, yres);
+        WriteImage(filenameBase+"_rpf_time"+filenameExt, timeColImg, xres, yres);
     }
 
     reporter.Update();
