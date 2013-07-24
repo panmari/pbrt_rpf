@@ -50,9 +50,7 @@ public:
 
     RPF(int xs, int ys, int w, int h,
          float jouni);
-    ~RPF() {
-        delete &allSamples;
-    }
+
     void AddSample(const CameraSample &sample, const Spectrum &L, 
             const Intersection &isect);
     void GetAdaptPixels(int spp, vector<vector<int> > &pixels);
