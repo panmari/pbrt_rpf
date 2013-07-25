@@ -70,12 +70,6 @@ private:
     int spp;
     long volatile sampleCount;
 
-    static bool comparator(SampleData sd1, SampleData sd2);
-
-    vector<float> interParams, finalParams;
-    float sigmaN, sigmaR, sigmaD;
-    float interMseSigma, finalMseSigma;
-
     vector<SampleData> allSamples;
     int xPixelStart, yPixelStart;
     int xPixelCount, yPixelCount;
@@ -90,9 +84,7 @@ private:
 
     // These images are stored for debug and visualization
     TwoDArray<Color> rhoImg;
-    TwoDArray<Color> norImg;
-    TwoDArray<Color> sigmaImg;
-
+    TwoDArray<Color> normalImg;
     RNG rng;
 
     //new debug img

@@ -36,15 +36,10 @@
 #include "spectrum.h"
 #include "intersection.h"
 #include "imageio.h"
-#include "montecarlo.h"
 #include "progressreporter.h"
 #include "RandomParameterFilter.h"
 
 #include "filter_utils/fmath.hpp"
-
-// Range sigma for bilateral filter, we found that with range term the result will be noisy,
-// so we set the sigma to infinite to drop the range term(0 indicates infinite in our implementation)
-const float c_SigmaC = 0.f;
 
 RPF::RPF(int xs, int ys, int w, int h,
           float _jouni) : jouni(_jouni) {
@@ -52,22 +47,22 @@ RPF::RPF(int xs, int ys, int w, int h,
     yPixelStart = ys;
     xPixelCount = w;
     yPixelCount = h;
-    spp = 4;
+    spp = 8;
     allSamples = vector<SampleData> (spp*xPixelCount*yPixelCount);
     colImg = TwoDArray<Color>(xPixelCount, yPixelCount);
 
-    norImg = TwoDArray<Color>(xPixelCount, yPixelCount);
+    //for debugging
     rhoImg = TwoDArray<Color>(xPixelCount, yPixelCount);
-    
-    fltImg = TwoDArray<Color>(xPixelCount, yPixelCount);
-    sigmaImg = TwoDArray<Color>(xPixelCount, yPixelCount);
-
-    //new:
+    normalImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     secNormalImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     secOrigImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     thirdOrigImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     lensImg = TwoDArray<Color>(xPixelCount, yPixelCount);
     timeImg = TwoDArray<float>(xPixelCount, yPixelCount);
+
+    fltImg = TwoDArray<Color>(xPixelCount, yPixelCount);
+
+
     sampleCount = -1;
 }
 
@@ -136,14 +131,14 @@ void RPF::WriteImage(const string &filename, int xres, int yres, bool dump) {
 
     if(dump) { // Write debug images
         // Normals contain negative values, normalize them here
-        for(int y = 0; y < norImg.GetRowNum(); y++)
-            for(int x = 0; x < norImg.GetColNum(); x++) {
-                norImg(x, y) += Color(1.f, 1.f, 1.f);
-                norImg(x, y) /= 2.f;
+        for(int y = 0; y < normalImg.GetRowNum(); y++)
+            for(int x = 0; x < normalImg.GetColNum(); x++) {
+                normalImg(x, y) += Color(1.f, 1.f, 1.f);
+                normalImg(x, y) /= 2.f;
                 secNormalImg(x, y) += Color(1.f, 1.f, 1.f);
                 secNormalImg(x, y) /= 2.f;
             }
-        WriteImage(filenameBase+"_rpf_nor"+filenameExt, norImg, xres, yres);
+        WriteImage(filenameBase+"_rpf_nor"+filenameExt, normalImg, xres, yres);
 
         WriteImage(filenameBase+"_rpf_rho"+filenameExt, rhoImg, xres, yres);
 
@@ -198,7 +193,7 @@ void RPF::Update(bool final) {
 		Color lensC = Color(sd.lensPos[0], sd.lensPos[1], 0.f);
 
 		colImg(x, y) += rgbC;
-		norImg(x, y) += normalC;
+		normalImg(x, y) += normalC;
 		rhoImg(x, y) += rhoC;
 		//new
 		secNormalImg(x, y) += secNormalC;
@@ -210,7 +205,7 @@ void RPF::Update(bool final) {
     for (int y=0; y < yPixelCount; y++) {
     	for (int x = 0; x < xPixelCount; x++) {
     		colImg(x, y) /= spp;
-			norImg(x, y) /= spp;
+			normalImg(x, y) /= spp;
 			rhoImg(x, y) /= spp;
 			//new
 			secNormalImg(x, y) /= spp;
@@ -219,8 +214,6 @@ void RPF::Update(bool final) {
 			lensImg(x, y) /= spp;
     	}
     }
-
-    vector<TwoDArray<Color> > fltArray;
 
 	RandomParameterFilter rpf(xPixelCount, yPixelCount, spp, jouni, allSamples);
 	rpf.Apply();
