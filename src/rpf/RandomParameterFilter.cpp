@@ -34,16 +34,10 @@
 //200 + 200*w
 #define DUMP_INTERMEDIATE_RESULTS false
 
-//TODO: make this configurable in scene file
-#define JOUNI 0.02f
-
 //some parameters that should stay true for most things
 #define CROP_BOX true
 #define HDR_CLAMP true
-#define REINSERT_ENERGY_HDR_CLAMP false
-
-//used to prevent div by zero
-#define EPSILON 1e-10
+#define REINSERT_ENERGY_HDR_CLAMP true
 
 #include "RandomParameterFilter.h"
 
@@ -384,8 +378,7 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 
 void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<float> &beta, float W_r_c,
 		vector<SampleData> &neighbourhood, int pixelIdx) {
-	const float var_8 = JOUNI;
-	const float var = 8*var_8/spp;
+	const float var = 8*jouni/spp;
 
 	const float scale_f = -sqr(1 - W_r_c) / (2*var);
 	const float scale_c = scale_f;
