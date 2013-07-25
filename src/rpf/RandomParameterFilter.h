@@ -45,8 +45,15 @@
 
 class RandomParameterFilter {
 public:
+
+	enum Quality {
+	        HIGH,
+	        MEDIUM
+	    };
+
     RandomParameterFilter(const int width, const int height,
-    		const int spp, const float jouni, vector<SampleData> &allSamples);
+    		const int spp, const float jouni, const Quality quality,
+    		vector<SampleData> &allSamples);
 
     void Apply();
 

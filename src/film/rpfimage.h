@@ -43,11 +43,13 @@
 #include "parallel.h"
 
 #include "rpf/rpf.h"
+#include "rpf/RandomParameterFilter.h"
 
 class RPFImageFilm : public Film {
 public:
     RPFImageFilm(int xres, int yres, Filter *filt, const float crop[4],
-              const string &filename, bool dp, const float jouni);
+              const string &filename, const bool dp,
+              const float jouni, const RandomParameterFilter::Quality qual);
     void AddSample(const CameraSample &sample, const Spectrum &L,
             const Intersection &isect);
     void Splat(const CameraSample &sample, const Spectrum &L);

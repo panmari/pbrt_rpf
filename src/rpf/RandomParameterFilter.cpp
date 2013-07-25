@@ -28,11 +28,11 @@
 
  */
 //debugging stuff
-#define DEBUG true
+#define DEBUG false
 #define DEBUG_PIXEL_NR 173+100*w
 //910344/spp
 //200 + 200*w
-#define DUMP_INTERMEDIATE_RESULTS true
+#define DUMP_INTERMEDIATE_RESULTS false
 
 //TODO: make this configurable in scene file
 #define JOUNI 0.02f
@@ -40,7 +40,7 @@
 //some parameters that should stay true for most things
 #define CROP_BOX true
 #define HDR_CLAMP true
-#define REINSERT_ENERGY_HDR_CLAMP true
+#define REINSERT_ENERGY_HDR_CLAMP false
 
 //used to prevent div by zero
 #define EPSILON 1e-10
@@ -55,18 +55,17 @@
 #include "imageio.h"
 #include "MutualInformation.h"
 #include "SampleData.h"
-#include<boost/range/numeric.hpp>
+#include <boost/range/numeric.hpp>
 #include <sys/time.h>
 
 const int BOX_SIZE[] = { 55, 35, 17, 7 };
-//const float MAX_SAMPLES_FACTOR[] = { 0.02f, 0.04f, 0.3f, 0.5f }; // for fast prototyping, by jklethinen
-//const float MAX_SAMPLES_FACTOR[] = { 0.1f, 0.2f, 0.3f, 0.5f }; // by me
-const float MAX_SAMPLES_FACTOR[] = { 0.5f, 0.5f, 0.5f, 0.5f }; // by sen
+const float MAX_SAMPLES_FACTOR_MEDIUM[] = { 0.02f, 0.04f, 0.3f, 0.5f }; // for fast prototyping, by jklethinen
+const float MAX_SAMPLES_FACTOR_HIGH[] = { 0.5f, 0.5f, 0.5f, 0.5f }; // by sen
 int MAX_SAMPLES[4];
 
 RandomParameterFilter::RandomParameterFilter(const int width, const int height,
-		const int spp, const float jouni, vector<SampleData> &allSamples) :
-	allSamples(allSamples), rng(RNG(42)), jouni(jouni) {
+		const int spp, const float _jouni, Quality quality, vector<SampleData> &_allSamples) :
+	allSamples(_allSamples), rng(RNG(42)), jouni(_jouni) {
 	this->w = width;
 	this->h = height;
 	this->spp = spp;
@@ -75,7 +74,11 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 		fprintf(debugLog, "Number of samples: %lu", allSamples.size());
 	}
 	for (int i = 0; i < 4; i++) {
-		MAX_SAMPLES[i] = sqr(BOX_SIZE[i]) * spp * MAX_SAMPLES_FACTOR[i];
+		MAX_SAMPLES[i] = sqr(BOX_SIZE[i]) * spp;
+		if (quality == MEDIUM)
+			MAX_SAMPLES[i] *= MAX_SAMPLES_FACTOR_MEDIUM[i];
+		else
+			MAX_SAMPLES[i] *= MAX_SAMPLES_FACTOR_HIGH[i];
 	}
 }
 

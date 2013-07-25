@@ -44,12 +44,12 @@
 #include "filter_utils/VectorNf.h"
 #include "filter_utils/TwoDArray.h"
 #include "SampleData.h"
+#include "RandomParameterFilter.h"
 
 class RPF {
 public:       
 
-    RPF(int xs, int ys, int w, int h,
-         float jouni);
+    RPF(int xs, int ys, int w, int h, float jouni, RandomParameterFilter::Quality qual);
 
     void AddSample(const CameraSample &sample, const Spectrum &L, 
             const Intersection &isect);
@@ -66,14 +66,14 @@ public:
 private:
     void WriteImage(const string &filename, const TwoDArray<Color> &image, int xres, int yres) const;
     TwoDArray<Color> FloatImageToColor(const TwoDArray<float> &image) const;
-    float CalculateAvgSpp() const;
     int spp;
     long volatile sampleCount;
 
     vector<SampleData> allSamples;
     int xPixelStart, yPixelStart;
     int xPixelCount, yPixelCount;
-    float jouni;
+    const float jouni;
+    const RandomParameterFilter::Quality quality;
 
     // Storing the image, features and their variance 
     // reconstructed by default filter

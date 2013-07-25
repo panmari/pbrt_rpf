@@ -37,12 +37,11 @@
 #include "intersection.h"
 #include "imageio.h"
 #include "progressreporter.h"
-#include "RandomParameterFilter.h"
 
 #include "filter_utils/fmath.hpp"
 
 RPF::RPF(int xs, int ys, int w, int h,
-          float _jouni) : jouni(_jouni) {
+          float _jouni, RandomParameterFilter::Quality _qual) : jouni(_jouni), quality(_qual) {
     xPixelStart = xs;
     yPixelStart = ys;
     xPixelCount = w;
@@ -112,10 +111,6 @@ void RPF::GetAdaptPixels(int spp, vector<vector<int> > &pixels) {
     //THis doesn't happen
 }
 
-float RPF::CalculateAvgSpp() const {
-    //nope
-	return spp;
-	}
 
 void RPF::WriteImage(const string &filename, int xres, int yres, bool dump) {
     Update(true);
@@ -215,7 +210,7 @@ void RPF::Update(bool final) {
     	}
     }
 
-	RandomParameterFilter rpf(xPixelCount, yPixelCount, spp, jouni, allSamples);
+	RandomParameterFilter rpf(xPixelCount, yPixelCount, spp, jouni, quality, allSamples);
 	rpf.Apply();
 
     for (uint i=0; i < allSamples.size(); i+=spp) {
