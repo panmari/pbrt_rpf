@@ -1,0 +1,25 @@
+# PBRT with support for Random Parameter Filtering (RPF)
+
+Sample scenes for rendering are provided in sbf_scenes. For now, the only 
+configurable parameter is jouni, which takes on a default value of 0.02
+if not specified. 
+
+## Considered data from samples
+
+This can be changed in `rpf/SampleData.h`.
+
+### Considered features
+
+* first hitpoint/second origin
+* second hitpoint/third origin
+* first normal
+* second normal
+* albedo/rho
+
+### Considered random parameters
+
+* first reflection direction
+* lens position
+* time
+
+

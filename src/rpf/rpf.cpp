@@ -42,11 +42,6 @@
 
 #include "filter_utils/fmath.hpp"
 
-#include <limits>
-#include <algorithm>
-#include <omp.h>
-#include <cmath>
-
 // Range sigma for bilateral filter, we found that with range term the result will be noisy,
 // so we set the sigma to infinite to drop the range term(0 indicates infinite in our implementation)
 const float c_SigmaC = 0.f;
