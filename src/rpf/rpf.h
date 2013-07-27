@@ -56,7 +56,7 @@ public:
     void GetAdaptPixels(int spp, vector<vector<int> > &pixels);
     void WriteImage(const string &filename, int xres, int yres, bool dump);
 
-    void Update(bool final);
+    void AssembleImages(bool dump);
 
     void SetSPP(int spp) {
     	this->spp = spp;
