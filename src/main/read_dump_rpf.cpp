@@ -25,7 +25,7 @@ int main(int argc, char** argv)
 
     vector<SampleData> allSamples;
     int w, h, spp;
-    std::ifstream dump(filename + ".bin", std::ifstream::in | std::ifstream::binary);
+    std::ifstream dump(filename, std::ifstream::in | std::ifstream::binary);
 
     dump.read((char*)&w, sizeof(int));
 	dump.read((char*)&h, sizeof(int));
@@ -34,7 +34,7 @@ int main(int argc, char** argv)
 	dump.read((char*)&(allSamples[0]), allSamples.size() * sizeof(SampleData));
 	dump.close();
 
-    RandomParameterFilter rpf(w, h, spp, 0.02f, RandomParameterFilter::Quality::HIGH, allSamples);
+    RandomParameterFilter rpf(w, h, spp, 0.02f, RandomParameterFilter::Quality::MEDIUM, allSamples);
     rpf.Apply();
 
     TwoDArray<Color> fltImg = TwoDArray<Color>(w, h);
