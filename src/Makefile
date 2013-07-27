@@ -91,7 +91,7 @@ ifeq ($(HAVE_LIBTIFF),1)
 	TOOLS += bin/exrtotiff
 endif
 
-default: dirs bin/pbrt $(TOOLS) bin/jkl_dump_rpf
+default: dirs bin/pbrt $(TOOLS) bin/read_lehtinen_dump_rpf bin/read_dump_rpf
 
 bin/%: dirs
 
@@ -167,12 +167,8 @@ objs/textures_%.o: textures/%.cpp
 objs/volumes_%.o: volumes/%.cpp
 	@echo "Building object $@"
 	@$(CXX) $(CXXFLAGS) -o $@ -c $<
-
-objs/pbrt.o: main/pbrt.cpp
-	@echo "Building object $@"
-	@$(CXX) $(CXXFLAGS) -o $@ -c $<
 	
-objs/jkl_dump_rpf.o: main/jkl_dump_rpf.cpp
+objs/%.o: main/%.cpp
 	@echo "Building object $@"
 	@$(CXX) $(CXXFLAGS) -o $@ -c $<
 
