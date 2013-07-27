@@ -28,7 +28,7 @@
 
  */
 //debugging stuff
-#define DEBUG false
+#define DEBUG true
 #define DEBUG_PIXEL_NR 173+100*w
 //910344/spp
 //200 + 200*w
@@ -209,9 +209,15 @@ void RandomParameterFilter::preprocessSamples() {
 			}
 		}
 	}
+	bool fixedInvalidSamples = false;
 	for (int i=0; i < spp - 1; i++) {
-		if (pixelWithInvalidSamplesCount[i])
+		if (pixelWithInvalidSamplesCount[i]) {
 			printf("%d pixels with %d invalid samples \n", pixelWithInvalidSamplesCount[i], i + 1);
+			fixedInvalidSamples = true;
+		}
+	}
+	if (!fixedInvalidSamples) {
+		printf("No invalid samples found. \n");
 	}
 	printf("Done! \n");
 }
