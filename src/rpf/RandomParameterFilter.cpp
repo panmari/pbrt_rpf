@@ -495,14 +495,13 @@ void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
 			pixelMeanSquare[f] += sqr(currentSample[f]);
 		}
 	}
-	for(int f=0;f<FEATURES_SIZE;f++)
-		{
-			pixelMean[f] /= spp;
-			pixelMeanSquare[f] /= spp;
+	for(int f=0;f<FEATURES_SIZE;f++) {
+		pixelMean[f] /= spp;
+		pixelMeanSquare[f] /= spp;
 
-			pixelStd[f] = sqrt(max(0.f, pixelMeanSquare[f] - sqr(pixelMean[f]) ));	// max() avoids accidental NaNs
-		}
+		pixelStd[f] = sqrt(max(0.f, pixelMeanSquare[f] - sqr(pixelMean[f]) ));	// max() avoids accidental NaNs
 	}
+}
 
 void RandomParameterFilter::getGaussian(float stddev, float &x, float &y) const {
 	// Box-Muller method, adapted from @ jtlehtin's code.
