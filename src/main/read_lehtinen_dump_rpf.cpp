@@ -24,7 +24,7 @@ void readDump(char** argv, vector<SampleData> &allSamples, int &w, int &h, int &
 	int	m_width, m_height, m_numSamplesPerPixel;
 	float m_version;
 	/**
-	 * largely taken from jkl, since it's his dump format
+	 * largely taken from jlehtinen, since it's his dump format
 	 */
 	FILE* fp  = fopen(filename.c_str(), "rb");
 
@@ -99,7 +99,7 @@ void readDump(char** argv, vector<SampleData> &allSamples, int &w, int &h, int &
 }
 
 /**
- * Dumps from jkl contain geometric normals, we need smooth ones here.
+ * Dumps from jlehtinen contain geometric normals, we need smooth ones here.
  */
 void smoothNormals(vector<SampleData> &allSamples, const int w, const int h, const int spp) {
 	const int fw = 5;

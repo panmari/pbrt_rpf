@@ -28,17 +28,20 @@
 
  */
 //debugging stuff
-#define DEBUG true
+#define DEBUG false
 #define DEBUG_PIXEL_NR 173+100*w
 //910344/spp
 //200 + 200*w
 #define DUMP_INTERMEDIATE_RESULTS false
 
 //some parameters that should stay true for most cases
-#define CROP_BOX true                 				  	// jkl => true, sen => false?
+#define CROP_BOX true                 				  	// jlehtinen => true, sen => false?
 #define HDR_CLAMP true									// both true
-#define REINSERT_ENERGY_HDR_CLAMP true					// jkl => true, sen => false
-#define PER_CHANNEL_ALPHA false							// jkl => true, sen => false
+#define REINSERT_ENERGY_HDR_CLAMP true					// jlehtinen => true, sen => false
+#define PER_CHANNEL_ALPHA true							// jlehtinen => false, sen => true
+
+// You'll most likely want to change this:
+#define RANDOM_PARAMS_SIZE 5 // TODO: make this a user-defined parameter.
 
 #include "RandomParameterFilter.h"
 
