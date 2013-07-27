@@ -34,11 +34,11 @@
 //200 + 200*w
 #define DUMP_INTERMEDIATE_RESULTS false
 
-//some parameters that should stay true for most things
+//some parameters that should stay true for most cases
 #define CROP_BOX true
 #define HDR_CLAMP true
 #define REINSERT_ENERGY_HDR_CLAMP true
-#define PER_CHANNEL_ALPHA true
+#define PER_CHANNEL_ALPHA false
 
 #include "RandomParameterFilter.h"
 
