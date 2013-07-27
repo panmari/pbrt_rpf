@@ -172,18 +172,23 @@ int main(int argc, char** argv)
     rpf.Apply();
 
     TwoDArray<Color> fltImg = TwoDArray<Color>(w, h);
+    TwoDArray<Color> indirectImg = TwoDArray<Color>(w, h);
     // Dumping img (and multiply with rho/albedo
     for (uint i=0; i < allSamples.size(); i+=spp) {
-    	Color c;
+    	Color c, indirect;
     	for (int j=0; j<spp; j++)
     		for(int k=0; k<3;k++){
     			c[k] += allSamples[i+j].outputColors[k]*allSamples[i+j].rho[k];
+    			c[k] += allSamples[i+j].outputColors[k];
     		}
     	c /= spp;
+    	indirect /= spp;
     	fltImg(allSamples[i].x, allSamples[i].y) = c;
+    	indirectImg(allSamples[i].x, allSamples[i].y) = indirect;
     }
-    ::WriteImage("test.exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
+    ::WriteImage("jl_color.exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
                      w, h, 0, 0);
-
+    ::WriteImage("jl_indirect.exr", (float*)indirectImg.GetRawPtr(), NULL, w, h,
+                        w, h, 0, 0);
     return 0;
 }
