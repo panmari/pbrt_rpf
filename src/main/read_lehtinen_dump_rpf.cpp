@@ -179,7 +179,7 @@ int main(int argc, char** argv)
     	for (int j=0; j<spp; j++)
     		for(int k=0; k<3;k++){
     			c[k] += allSamples[i+j].outputColors[k]*allSamples[i+j].rho[k];
-    			c[k] += allSamples[i+j].outputColors[k];
+    			indirect[k] += allSamples[i+j].outputColors[k];
     		}
     	c /= spp;
     	indirect /= spp;
