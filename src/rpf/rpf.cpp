@@ -123,6 +123,9 @@ void RPF::WriteImage(const string &filename, int xres, int yres, bool dump) {
     if (dump) {
     	std::ofstream dump(filenameBase + ".bin", std::ifstream::out | std::ifstream::binary);
 		// DUMP NUMBER allSamples.size()
+    	dump.write((char*)&xPixelCount, sizeof(int));
+    	dump.write((char*)&yPixelCount, sizeof(int));
+    	dump.write((char*)&spp, sizeof(int));
 		dump.write((char*)&(allSamples[0]), allSamples.size() * sizeof(SampleData));
 		dump.close();
     }
