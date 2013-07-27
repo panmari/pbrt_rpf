@@ -3,7 +3,7 @@ Scale -1 1 1
 Accelerator "bvh"
 
 Film "rpfimage"    
-    "integer xresolution"    [500] "integer yresolution" [500]
+    "integer xresolution"    [300] "integer yresolution" [300]
     "string filename"        ["sibenik_rpf.exr"]
     "bool dumpfeaturebuffer" ["false"]
     "float jouni"	     [0.02]
