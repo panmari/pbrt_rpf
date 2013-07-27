@@ -35,10 +35,10 @@
 #define DUMP_INTERMEDIATE_RESULTS false
 
 //some parameters that should stay true for most cases
-#define CROP_BOX true
-#define HDR_CLAMP true
-#define REINSERT_ENERGY_HDR_CLAMP true
-#define PER_CHANNEL_ALPHA true
+#define CROP_BOX true                 				  	// jkl => true, sen => false?
+#define HDR_CLAMP true									// both true
+#define REINSERT_ENERGY_HDR_CLAMP true					// jkl => true, sen => false
+#define PER_CHANNEL_ALPHA false							// jkl => true, sen => false
 
 #include "RandomParameterFilter.h"
 
@@ -343,7 +343,8 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 		// sets alpha channel dependent
 		if (PER_CHANNEL_ALPHA) {
 			const float W_r_cl = m_D_r_cl*rcp(m_D_r_cl + m_D_p_cl);
-			alpha[l] = max(1 - (1 + 0.1f*iterStep)*W_r_cl, 0.f);
+			// yields better results with (dubious) factor 2
+			alpha[l] = max(1 - 2*(1 + 0.1f*iterStep)*W_r_cl, 0.f);
 			W_r_c += W_r_cl;
 		}
 	}
