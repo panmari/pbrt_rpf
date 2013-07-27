@@ -38,7 +38,7 @@
 #define CROP_BOX true
 #define HDR_CLAMP true
 #define REINSERT_ENERGY_HDR_CLAMP true
-#define PER_CHANNEL_ALPHA false
+#define PER_CHANNEL_ALPHA true
 
 #include "RandomParameterFilter.h"
 
@@ -340,7 +340,7 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 		D_p_c += m_D_p_cl;
 		D_f_c += m_D_f_cl;
 
-		// sets alpha channel dependant
+		// sets alpha channel dependent
 		if (PER_CHANNEL_ALPHA) {
 			const float W_r_cl = m_D_r_cl*rcp(m_D_r_cl + m_D_p_cl);
 			alpha[l] = max(1 - (1 + 0.1f*iterStep)*W_r_cl, 0.f);
@@ -354,28 +354,21 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 		std::fill(alpha.begin(), alpha.end(), max(1 - (1 + 0.1f*iterStep)*W_r_c, 0.f));
 	}
 
-	// dependency for scene features
-	vector<float> m_D_fk_r = vector<float>(FEATURES_SIZE);
-	vector<float> m_D_fk_p = vector<float>(FEATURES_SIZE);
-	std::fill(m_D_fk_r.begin(), m_D_fk_r.end(), 0.f);
-	std::fill(m_D_fk_p.begin(), m_D_fk_p.end(), 0.f);
+
+	const float D_a_c = D_r_c + D_p_c + D_f_c;
 
 	for(int k = 0; k < FEATURES_SIZE; k++) {
+		float m_D_fk_r = 0.f, m_D_fk_p = 0.f;
 		for(int l = 0; l < RANDOM_PARAMS_SIZE; l++) {
-			m_D_fk_r[k] += mi.mutualinfo(neighbourhood,
+			m_D_fk_r += mi.mutualinfo(neighbourhood,
 					l + RANDOM_PARAMS_OFFSET, k + FEATURES_OFFSET);
 		}
 		for(int l=0; l < IMG_POS_SIZE; l++) {
-			m_D_fk_p[k] += mi.mutualinfo(neighbourhood,
+			m_D_fk_p += mi.mutualinfo(neighbourhood,
 					l + IMG_POS_OFFSET, k + FEATURES_OFFSET);
 		}
-	}
-
-	const float D_a_c = D_r_c + D_p_c + D_f_c;
-	for(int k=0;k<FEATURES_SIZE;k++) {
-		const float W_fk_r = m_D_fk_r[k] * rcp(m_D_fk_r[k] + m_D_fk_p[k]);
+		const float W_fk_r = m_D_fk_r * rcp(m_D_fk_r + m_D_fk_p);
 		const float W_fk_c = m_D_fk_c[k] * rcp(D_a_c);
-
 		beta[k] = W_fk_c * max(1-(1+0.1f*iterStep)*W_fk_r, 0.f);
 	}
 }
