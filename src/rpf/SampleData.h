@@ -58,12 +58,12 @@ struct SampleData {
 	float avg() const						{ return sum()/getSize(); }
 
 	/**
-	 * For ordering in sbf.h
+	 * For ordering in sbf.h. Hopefully, this produces the same ordering every time.
 	 */
 	bool operator <(const SampleData& other) const {
 		if (y == other.y)
-			return x < other.x;
-		else return y < other.y;
+			return imgPos[0] < other.imgPos[0];
+		else return imgPos[1] < other.imgPos[1];
 	}
 };
 
