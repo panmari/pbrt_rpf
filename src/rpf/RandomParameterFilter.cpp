@@ -237,13 +237,16 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 
 	SampleData pixelMean, pixelStd;
 	getPixelMeanAndStd(pixelIdx, pixelMean, pixelStd);
+	for(int i = 0; i < FEATURES_SIZE; i++) {
+		fprintf(debugLog, "%-.3f\t %-.3f \n", pixelMean[i], pixelStd[i]);
+	}
 	for (int i = 0; i < maxSamples - spp; i++) {
-		int x = pixelMean.x, y = pixelMean.y, idx;
+		int x, y, idx;
 		//retry, as long as its not in picture or original pixel
 		do {
 			float offsetX, offsetY;
 			getGaussian(stdv, offsetX, offsetY);
-			if (CROP_BOX && (abs(offsetX) >= boxsize/2.f || abs(offsetY) >= boxsize/2.f))		// get only pixels inside of 'box'
+			if (CROP_BOX && (fabs(offsetX) >= boxsize/2.f || fabs(offsetY) >= boxsize/2.f))		// get only pixels inside of 'box'
 				continue;
 			x = pixelMean.x + int(floor(offsetX+0.5f));
 			y = pixelMean.y + int(floor(offsetY+0.5f));
@@ -253,19 +256,26 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		// to check if sample from right location was retrieved
 		//if (DEBUG) { fprintf(debugLog, "[%d,%d vs %d,%d]", x, y, sample.x, sample.y); }
 		bool flag = true;
+		fprintf(debugLog, "%d ", idx);
 		for (int f = FEATURES_OFFSET; f < FEATURES_SIZE && flag; f++) {
 			//printf("\n %f vs %f", sample[f], pixelMean[f]);
 			const float lim = (f < 6) ? 30.f : 3.f;
 			if( fabs(sample[f] - pixelMean[f]) > lim*pixelStd[f] &&
 					(fabs(sample[f] - pixelMean[f]) > 0.1f || pixelStd[f] > 0.1f)) {
+					fprintf(debugLog, "rejected!, f=%d, with %-.3f", f, sample[f]);
 					flag = false;
 			}
 		}
-
+		fprintf(debugLog, ", f=8, with %-.3f", sample[8]);
+		fprintf(debugLog, "\n");
 		if (flag) {
 			//by default, this pushes a copy there
 			neighbourhood.push_back(sample);
 		}
+	}
+
+	for(int i = 0; i < FEATURES_SIZE; i++) {
+			fprintf(debugLog, "%-.3f\t %-.3f \n", pixelMean[i], pixelStd[i]);
 	}
 
 
