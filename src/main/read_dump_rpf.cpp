@@ -2,12 +2,8 @@
  * File:   rec.cpp
  * Author: fabrice
  * Modified: sm
- * Created on 25. avril 2011, 07:19
  */
-#pragma GCC diagnostic ignored "-Wunused-result"
 
-#include <cstdlib>
-#include <iostream>
 #include <fstream>
 
 #include "core/pbrt.h"

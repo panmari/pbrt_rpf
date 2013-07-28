@@ -135,7 +135,7 @@ void RandomParameterFilter::Apply() {
 	}
 	gettimeofday(&endTime, NULL);
 	int duration(endTime.tv_sec - startTime.tv_sec);
-	printf("The whole rendering process took %d minutes and %d seconds", duration/60, duration%60);
+	printf("The whole rendering process took %d minutes and %d seconds \n", duration/60, duration%60);
 }
 
 void RandomParameterFilter::dumpIntermediateResults(int iterStep) {
