@@ -237,30 +237,26 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	SampleData pixelMean, pixelStd;
 	getPixelMeanAndStd(pixelIdx, pixelMean, pixelStd);
 	for (int i = 0; i < maxSamples - spp; i++) {
-		int x = pixelMean.x, y = pixelMean.y, idx;
+		int x = 0, y = 0, idx; // x, y are only set to prevent warning
 		//retry, as long as its not in picture or original pixel
 		do {
 			float offsetX, offsetY;
 			getGaussian(stdv, offsetX, offsetY);
-			if (CROP_BOX && (abs(offsetX) >= boxsize/2.f || abs(offsetY) >= boxsize/2.f))		// get only pixels inside of 'box'
+			if (CROP_BOX && (fabs(offsetX) >= boxsize/2.f || fabs(offsetY) >= boxsize/2.f))		// get only pixels inside of 'box'
 				continue;
 			x = pixelMean.x + int(floor(offsetX+0.5f));
 			y = pixelMean.y + int(floor(offsetY+0.5f));
 		} while((x == pixelMean.x && y == pixelMean.y) || 			// can not be same pixel
 				x < 0 || y < 0 || x >= w || y >= h);				// or outside of image
 		SampleData &sample = getRandomSampleAt(x, y, idx);
-		// to check if sample from right location was retrieved
-		//if (DEBUG) { fprintf(debugLog, "[%d,%d vs %d,%d]", x, y, sample.x, sample.y); }
 		bool flag = true;
 		for (int f = FEATURES_OFFSET; f < FEATURES_SIZE && flag; f++) {
-			//printf("\n %f vs %f", sample[f], pixelMean[f]);
 			const float lim = (f < 6) ? 30.f : 3.f;
 			if( fabs(sample[f] - pixelMean[f]) > lim*pixelStd[f] &&
 					(fabs(sample[f] - pixelMean[f]) > 0.1f || pixelStd[f] > 0.1f)) {
 					flag = false;
 			}
 		}
-
 		if (flag) {
 			//by default, this pushes a copy there
 			neighbourhood.push_back(sample);
@@ -494,14 +490,13 @@ void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
 			pixelMeanSquare[f] += sqr(currentSample[f]);
 		}
 	}
-	for(int f=0;f<FEATURES_SIZE;f++)
-		{
-			pixelMean[f] /= spp;
-			pixelMeanSquare[f] /= spp;
+	for(int f=0;f<FEATURES_SIZE;f++) {
+		pixelMean[f] /= spp;
+		pixelMeanSquare[f] /= spp;
 
-			pixelStd[f] = sqrt(max(0.f, pixelMeanSquare[f] - sqr(pixelMean[f]) ));	// max() avoids accidental NaNs
-		}
+		pixelStd[f] = sqrt(max(0.f, pixelMeanSquare[f] - sqr(pixelMean[f]) ));	// max() avoids accidental NaNs
 	}
+}
 
 void RandomParameterFilter::getGaussian(float stddev, float &x, float &y) const {
 	// Box-Muller method, adapted from @ jtlehtin's code.
