@@ -13,6 +13,7 @@
 #include "core/pbrt.h"
 #include "rpf/RandomParameterFilter.h"
 #include "rpf/SampleData.h"
+#include "rpf/rpf.h"
 #include "core/imageio.h"
 #include "filter_utils/VectorNf.h"
 using namespace std;
@@ -167,6 +168,7 @@ int main(int argc, char** argv)
     int w, h, spp;
     readDump(argv, allSamples, w, h, spp);
     smoothNormals(allSamples, w, h, spp);
+    RPF::dumpAsBinary("jl_dump", w, h, spp, allSamples);
 
     RandomParameterFilter rpf(w, h, spp, 0.02f, RandomParameterFilter::Quality::MEDIUM, allSamples);
     rpf.Apply();
