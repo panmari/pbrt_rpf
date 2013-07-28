@@ -81,6 +81,10 @@ void RandomParameterFilter::Apply() {
 	gettimeofday(&startTime, NULL);
 	preprocessSamples();
 
+	if (DEBUG) {
+		fprintf(debugLog, "Debugging pixel nr %d, at %d, %d", DEBUG_PIXEL_NR, DEBUG_PIXEL_NR%w, DEBUG_PIXEL_NR/w);
+	}
+
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + std::to_string(iterStep + 1) + " of 4");
 		if (DEBUG) fprintf(debugLog, "\n*** Starting pass number %d ***\n", iterStep);
@@ -410,7 +414,7 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 		SampleData &s = allSamples[pixelIdx + i];
 		for (int k = 0; k <3; k++) { //can I assign the whole array at once?
 			s.outputColors[k] = color[k]/sum_relative_weights;
-			if (DEBUG) fprintf(debugLog, "%-.3f, %-.3f\n", s.inputColors[k], s.outputColors[k]);
+			if (DEBUG) fprintf(debugLog, "%-.4f, %-.4f\n", s.inputColors[k], s.outputColors[k]);
 		}
 	}
 
