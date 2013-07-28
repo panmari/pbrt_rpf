@@ -48,7 +48,8 @@ int main(int argc, char** argv)
     	c /= spp;
     	fltImg(allSamples[i].x, allSamples[i].y) = c;
     }
-    WriteImage("test.exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
+    string filenameBase = filename.substr(0, filename.rfind("."));
+    WriteImage(filenameBase + "_flt.exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
                      w, h, 0, 0);
 
     return 0;
