@@ -169,7 +169,7 @@ void RandomParameterFilter::preprocessSamples() {
 			SampleData &s = allSamples[idx];
 			bool valid = true;
 			// invalid, if second or third origin have one component very far off
-			for (int f=0; f < 6; f++) {
+			for (int f = FEATURES_OFFSET; f < 6; f++) {
 				if (s[f] > 1e10f) {
 					valid = false;
 					break;
@@ -182,8 +182,12 @@ void RandomParameterFilter::preprocessSamples() {
 				invalidSamplesIdx.push_back(idx);
 			}
 		}
-		if (validSamplesIdx.size() > 0)
+		if (validSamplesIdx.size() > 0) {
 			pixelValidSamplesMean.divide(validSamplesIdx.size());
+		}
+		// need to set x/y separately bc they were interpreted as float before
+		pixelValidSamplesMean.x = allSamples[pixelOffset].x;
+		pixelValidSamplesMean.y = allSamples[pixelOffset].y;
 		if (invalidSamplesIdx.size() > 0)
 			pixelWithInvalidSamplesCount[invalidSamplesIdx.size() - 1]++;
 		for (uint invalidSampleIdx: invalidSamplesIdx) {
@@ -191,8 +195,7 @@ void RandomParameterFilter::preprocessSamples() {
 			if (validSamplesIdx.size() > 0) {
 				//replace invalid sample with random valid sample from same pixel
 				int replaceIdx = (int) (rng.RandomFloat()*validSamplesIdx.size());
-				SampleData &s2 = allSamples[validSamplesIdx[replaceIdx]];
-				s = s2;
+				s = allSamples[validSamplesIdx[replaceIdx]];
 				//put radiance to black of overwritten sample
 				for (int i = 0; i < 3; i++) {
 					s.rgb[i] = 0;
@@ -201,16 +204,12 @@ void RandomParameterFilter::preprocessSamples() {
 				}
 			}
 			else {
-				const SampleData &invS = allSamples[invalidSamplesIdx[0]];
 				s = pixelValidSamplesMean; //set everything to 0 basically
-				//take x and y from an invalid sample, so it doesn't intefere with [0,0]
-				s.x = invS.x;
-				s.y = invS.y;
 			}
 		}
 	}
 	bool fixedInvalidSamples = false;
-	for (int i=0; i < spp - 1; i++) {
+	for (int i=0; i < spp; i++) {
 		if (pixelWithInvalidSamplesCount[i]) {
 			printf("%d pixels with %d invalid samples \n", pixelWithInvalidSamplesCount[i], i + 1);
 			fixedInvalidSamples = true;

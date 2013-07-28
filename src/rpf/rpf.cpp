@@ -37,7 +37,7 @@
 #include "intersection.h"
 #include "imageio.h"
 #include "progressreporter.h"
-
+#include <fstream>
 #include "filter_utils/fmath.hpp"
 
 RPF::RPF(int xs, int ys, int w, int h,
@@ -107,17 +107,33 @@ void RPF::AddSample(const CameraSample &sample, const Spectrum &L,
 }
 
 void RPF::GetAdaptPixels(int spp, vector<vector<int> > &pixels) {
-    Update(false);
     //THis doesn't happen
 }
 
 
 void RPF::WriteImage(const string &filename, int xres, int yres, bool dump) {
-    Update(true);
 
-    ProgressReporter reporter(1, "Dumping images");
+	ProgressReporter reporter(2, "Sorting samples...");
+	std::sort(allSamples.begin(), allSamples.end());
+	reporter.Done();
+
     string filenameBase = filename.substr(0, filename.rfind(".")) + "_jouni_" + std::to_string(jouni).substr(2,3);
     string filenameExt  = filename.substr(filename.rfind("."));
+
+    if (dump) {
+    	std::ofstream dump(filenameBase + ".bin", std::ifstream::out | std::ifstream::binary);
+		// DUMP NUMBER allSamples.size()
+    	dump.write((char*)&xPixelCount, sizeof(int));
+    	dump.write((char*)&yPixelCount, sizeof(int));
+    	dump.write((char*)&spp, sizeof(int));
+		dump.write((char*)&(allSamples[0]), allSamples.size() * sizeof(SampleData));
+		dump.close();
+    }
+
+	RandomParameterFilter rpf(xPixelCount, yPixelCount, spp, jouni, quality, allSamples);
+	rpf.Apply();
+
+    AssembleImages(dump);
 
     //printf("Avg spp: %.2f\n", CalculateAvgSpp());
 
@@ -145,9 +161,6 @@ void RPF::WriteImage(const string &filename, int xres, int yres, bool dump) {
         TwoDArray<Color> timeColImg = FloatImageToColor(timeImg);
         WriteImage(filenameBase+"_rpf_time"+filenameExt, timeColImg, xres, yres);
     }
-
-    reporter.Update();
-    reporter.Done();
 }
 
 void RPF::WriteImage(const string &filename, const TwoDArray<Color> &image, int xres, int yres) const {
@@ -165,10 +178,7 @@ TwoDArray<Color> RPF::FloatImageToColor(const TwoDArray<float> &image) const {
     return colorImg;
 }
 
-void RPF::Update(bool final) {
-	ProgressReporter reporter(2, "Sorting samples...");
-    std::sort(allSamples.begin(), allSamples.end());
-    reporter.Done();
+void RPF::AssembleImages(bool dump) {
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
     for(uint i = 0; i < allSamples.size(); i++) {
 		SampleData sd = allSamples[i];
@@ -209,9 +219,6 @@ void RPF::Update(bool final) {
 			lensImg(x, y) /= spp;
     	}
     }
-
-	RandomParameterFilter rpf(xPixelCount, yPixelCount, spp, jouni, quality, allSamples);
-	rpf.Apply();
 
     for (uint i=0; i < allSamples.size(); i+=spp) {
     	Color c;
