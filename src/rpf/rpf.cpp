@@ -41,7 +41,7 @@
 #include "filter_utils/fmath.hpp"
 
 RPF::RPF(int xs, int ys, int w, int h,
-          float _jouni, RandomParameterFilter::Quality _qual) : jouni(_jouni), quality(_qual) {
+          float _jouni, string _qual) : jouni(_jouni), quality(_qual) {
     xPixelStart = xs;
     yPixelStart = ys;
     xPixelCount = w;
@@ -60,7 +60,6 @@ RPF::RPF(int xs, int ys, int w, int h,
     timeImg = TwoDArray<float>(xPixelCount, yPixelCount);
 
     fltImg = TwoDArray<Color>(xPixelCount, yPixelCount);
-
 
     sampleCount = -1;
 }
@@ -110,7 +109,6 @@ void RPF::GetAdaptPixels(int spp, vector<vector<int> > &pixels) {
     //THis doesn't happen
 }
 
-
 void RPF::WriteImage(const string &filename, int xres, int yres, bool dump) {
 
 	ProgressReporter reporter(2, "Sorting samples...");
@@ -121,16 +119,11 @@ void RPF::WriteImage(const string &filename, int xres, int yres, bool dump) {
     string filenameExt  = filename.substr(filename.rfind("."));
 
     if (dump) {
-    	std::ofstream dump(filenameBase + ".bin", std::ifstream::out | std::ifstream::binary);
-		// DUMP NUMBER allSamples.size()
-    	dump.write((char*)&xPixelCount, sizeof(int));
-    	dump.write((char*)&yPixelCount, sizeof(int));
-    	dump.write((char*)&spp, sizeof(int));
-		dump.write((char*)&(allSamples[0]), allSamples.size() * sizeof(SampleData));
-		dump.close();
+		dumpAsBinary(filenameBase, xPixelCount, yPixelCount, spp, allSamples);
     }
 
-	RandomParameterFilter rpf(xPixelCount, yPixelCount, spp, jouni, quality, allSamples);
+	RandomParameterFilter rpf(xPixelCount, yPixelCount, spp, jouni, allSamples);
+	rpf.setQuality(quality);
 	rpf.Apply();
 
     AssembleImages(dump);
@@ -230,5 +223,18 @@ void RPF::AssembleImages(bool dump) {
     	fltImg(allSamples[i].x, allSamples[i].y) = c;
     }
 
+}
+
+void RPF::dumpAsBinary(const string &filenameBase, const int w, const int h,
+		const int spp, const vector<SampleData> &allSamples) {
+	std::ofstream dump(filenameBase + ".bin",
+			std::ifstream::out | std::ifstream::binary);
+	// DUMP NUMBER allSamples.size()
+	dump.write((char*) (&w), sizeof(int));
+	dump.write((char*) (&h), sizeof(int));
+	dump.write((char*) (&spp), sizeof(int));
+	dump.write((char*) (&(allSamples[0])),
+			allSamples.size() * sizeof(SampleData));
+	dump.close();
 }
 

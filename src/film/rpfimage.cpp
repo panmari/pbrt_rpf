@@ -41,7 +41,7 @@
 // SBFImageFilm Method Definitions
 RPFImageFilm::RPFImageFilm(int xres, int yres, Filter *filt, const float crop[4],
                      const string &fn, const bool dp,
-                     const float jouni, RandomParameterFilter::Quality qual)
+                     const float jouni, string qual)
     : Film(xres, yres) {
 	filter = filt;
     memcpy(cropWindow, crop, 4 * sizeof(float));
@@ -124,10 +124,7 @@ RPFImageFilm *CreateRPFImageFilm(const ParamSet &params, Filter *filt) {
     bool debug = params.FindOneBool("dumpfeaturebuffer", false);
 
     float jouni = params.FindOneFloat("jouni", 0.02f);
-    RandomParameterFilter::Quality qual;
-    if (params.FindOneString("quality", "medium") == "medium")
-    	qual = RandomParameterFilter::Quality::MEDIUM;
-    else qual = RandomParameterFilter::Quality::HIGH;
+    string qual = params.FindOneString("quality", "medium");
 
     return new RPFImageFilm(xres, yres, filt, crop, filename,
                             debug, jouni, qual);

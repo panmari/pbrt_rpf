@@ -62,21 +62,15 @@ const float MAX_SAMPLES_FACTOR_HIGH[] = { 0.5f, 0.5f, 0.5f, 0.5f }; // by sen
 int MAX_SAMPLES[4];
 
 RandomParameterFilter::RandomParameterFilter(const int width, const int height,
-		const int spp, const float _jouni, Quality quality, vector<SampleData> &_allSamples) :
-	allSamples(_allSamples), rng(RNG(42)), jouni(_jouni) {
+		const int spp, const float _jouni, vector<SampleData> &_allSamples) :
+	allSamples(_allSamples), jouni(_jouni) {
 	this->w = width;
 	this->h = height;
 	this->spp = spp;
 	if (DEBUG) {
 		this->debugLog = fopen("rpf.log", "w");
-		fprintf(debugLog, "Number of samples: %lu", allSamples.size());
-	}
-	for (int i = 0; i < 4; i++) {
-		MAX_SAMPLES[i] = sqr(BOX_SIZE[i]) * spp;
-		if (quality == MEDIUM)
-			MAX_SAMPLES[i] *= MAX_SAMPLES_FACTOR_MEDIUM[i];
-		else
-			MAX_SAMPLES[i] *= MAX_SAMPLES_FACTOR_HIGH[i];
+		fprintf(debugLog, "Number of samples: %lu, size: %dx%d, spp: %d \n",
+				allSamples.size(), w, h, spp);
 	}
 }
 
@@ -88,10 +82,11 @@ void RandomParameterFilter::Apply() {
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + std::to_string(iterStep + 1) + " of 4");
 		if (DEBUG) fprintf(debugLog, "\n*** Starting pass number %d ***\n", iterStep);
-#pragma omp parallel for num_threads(PbrtOptions.nCores)
 #if DEBUG
 		for (int pixel_nr = DEBUG_PIXEL_NR; pixel_nr <= DEBUG_PIXEL_NR; pixel_nr++) {
+			fprintf(debugLog, "Debugging pixel nr %d, at %d, %d \n", pixel_nr, pixel_nr%w, (int)pixel_nr/w);
 #else
+#pragma omp parallel for num_threads(PbrtOptions.nCores)
 		for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
 #endif
 			const int pixel_idx = pixel_nr * spp;
@@ -139,7 +134,7 @@ void RandomParameterFilter::Apply() {
 	}
 	gettimeofday(&endTime, NULL);
 	int duration(endTime.tv_sec - startTime.tv_sec);
-	printf("The whole rendering process took %d minutes and %d seconds", duration/60, duration%60);
+	printf("The whole rendering process took %d minutes and %d seconds \n", duration/60, duration%60);
 }
 
 void RandomParameterFilter::dumpIntermediateResults(int iterStep) {
@@ -165,6 +160,7 @@ void RandomParameterFilter::dumpIntermediateResults(int iterStep) {
 void RandomParameterFilter::preprocessSamples() {
 	printf("Preprocessing... \n");
 	vector<int> pixelWithInvalidSamplesCount(spp);
+	RNG rng(42);
 	for (uint pixelOffset = 0; pixelOffset < allSamples.size(); pixelOffset+= spp) {
 		SampleData pixelValidSamplesMean;
 		pixelValidSamplesMean.reset();
@@ -241,31 +237,28 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 
 	SampleData pixelMean, pixelStd;
 	getPixelMeanAndStd(pixelIdx, pixelMean, pixelStd);
+	RNG rng(pixelIdx);
 	for (int i = 0; i < maxSamples - spp; i++) {
-		int x = pixelMean.x, y = pixelMean.y, idx;
+		int x = 0, y = 0, idx; // x, y are only set to prevent warning
 		//retry, as long as its not in picture or original pixel
 		do {
 			float offsetX, offsetY;
-			getGaussian(stdv, offsetX, offsetY);
-			if (CROP_BOX && (abs(offsetX) >= boxsize/2.f || abs(offsetY) >= boxsize/2.f))		// get only pixels inside of 'box'
+			getGaussian(stdv, offsetX, offsetY, rng);
+			if (CROP_BOX && (fabs(offsetX) >= boxsize/2.f || fabs(offsetY) >= boxsize/2.f))		// get only pixels inside of 'box'
 				continue;
 			x = pixelMean.x + int(floor(offsetX+0.5f));
 			y = pixelMean.y + int(floor(offsetY+0.5f));
 		} while((x == pixelMean.x && y == pixelMean.y) || 			// can not be same pixel
 				x < 0 || y < 0 || x >= w || y >= h);				// or outside of image
-		SampleData &sample = getRandomSampleAt(x, y, idx);
-		// to check if sample from right location was retrieved
-		//if (DEBUG) { fprintf(debugLog, "[%d,%d vs %d,%d]", x, y, sample.x, sample.y); }
+		SampleData &sample = getRandomSampleAt(x, y, idx, rng);
 		bool flag = true;
 		for (int f = FEATURES_OFFSET; f < FEATURES_SIZE && flag; f++) {
-			//printf("\n %f vs %f", sample[f], pixelMean[f]);
 			const float lim = (f < 6) ? 30.f : 3.f;
 			if( fabs(sample[f] - pixelMean[f]) > lim*pixelStd[f] &&
 					(fabs(sample[f] - pixelMean[f]) > 0.1f || pixelStd[f] > 0.1f)) {
 					flag = false;
 			}
 		}
-
 		if (flag) {
 			//by default, this pushes a copy there
 			neighbourhood.push_back(sample);
@@ -415,7 +408,7 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 		SampleData &s = allSamples[pixelIdx + i];
 		for (int k = 0; k <3; k++) { //can I assign the whole array at once?
 			s.outputColors[k] = color[k]/sum_relative_weights;
-			if (DEBUG) fprintf(debugLog, "%-.3f, %-.3f\n", s.inputColors[k], s.outputColors[k]);
+			if (DEBUG) fprintf(debugLog, "%-.4f, %-.4f\n", s.inputColors[k], s.outputColors[k]);
 		}
 	}
 
@@ -481,7 +474,7 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
  * Only x, y are taken from the first sample of the pixel and assigned to pixelMean
  */
 void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
-		SampleData &pixelMean, SampleData &pixelStd) {
+		SampleData &pixelMean, SampleData &pixelStd) const {
 	SampleData pixelMeanSquare;
 	pixelMean.reset(); pixelMeanSquare.reset();
 	//set x and y separately
@@ -495,16 +488,15 @@ void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
 			pixelMeanSquare[f] += sqr(currentSample[f]);
 		}
 	}
-	for(int f=0;f<FEATURES_SIZE;f++)
-		{
-			pixelMean[f] /= spp;
-			pixelMeanSquare[f] /= spp;
+	for(int f=0;f<FEATURES_SIZE;f++) {
+		pixelMean[f] /= spp;
+		pixelMeanSquare[f] /= spp;
 
-			pixelStd[f] = sqrt(max(0.f, pixelMeanSquare[f] - sqr(pixelMean[f]) ));	// max() avoids accidental NaNs
-		}
+		pixelStd[f] = sqrt(max(0.f, pixelMeanSquare[f] - sqr(pixelMean[f]) ));	// max() avoids accidental NaNs
 	}
+}
 
-void RandomParameterFilter::getGaussian(float stddev, float &x, float &y) const {
+void RandomParameterFilter::getGaussian(const float stddev, float &x, float &y, RNG &rng) const {
 	// Box-Muller method, adapted from @ jtlehtin's code.
 	float S, V1, V2;
 	do {
@@ -517,7 +509,26 @@ void RandomParameterFilter::getGaussian(float stddev, float &x, float &y) const 
 	y = sqrt(-2 * log(S) / S) * V2 * stddev;
 }
 
-SampleData& RandomParameterFilter::getRandomSampleAt(const int x, int y, int &idx) {
+SampleData& RandomParameterFilter::getRandomSampleAt(const int x, int y, int &idx, RNG &rng) const {
 	idx = (x + y*w)*spp + (int)(spp*rng.RandomFloat());
 	return allSamples[idx];
+}
+
+void RandomParameterFilter::setQuality(string quality_string){
+	Quality quality;
+	if (quality_string == "high" || quality_string == "sen") {
+		quality = Quality::HIGH;
+		printf("Filter quality set to high\n");
+	}
+	else {
+		quality = RandomParameterFilter::Quality::MEDIUM;
+		printf("Filter quality set to medium\n");
+	}
+	for (int i = 0; i < 4; i++) {
+		MAX_SAMPLES[i] = sqr(BOX_SIZE[i]) * spp;
+		if (quality == Quality::MEDIUM)
+			MAX_SAMPLES[i] *= MAX_SAMPLES_FACTOR_MEDIUM[i];
+		else
+			MAX_SAMPLES[i] *= MAX_SAMPLES_FACTOR_HIGH[i];
+	}
 }

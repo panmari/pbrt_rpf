@@ -49,13 +49,12 @@
 class RPF {
 public:       
 
-    RPF(int xs, int ys, int w, int h, float jouni, RandomParameterFilter::Quality qual);
+    RPF(int xs, int ys, int w, int h, float jouni, string qual);
 
     void AddSample(const CameraSample &sample, const Spectrum &L, 
             const Intersection &isect);
     void GetAdaptPixels(int spp, vector<vector<int> > &pixels);
     void WriteImage(const string &filename, int xres, int yres, bool dump);
-
     void AssembleImages(bool dump);
 
     void SetSPP(int spp) {
@@ -63,6 +62,9 @@ public:
     	printf("Set spp to %d", spp);
     	allSamples.resize(xPixelCount * yPixelCount * spp);
     }
+	static void dumpAsBinary(const string &filenameBase, const int w, const int h,
+				const int spp, const vector<SampleData> &allSamples);
+
 private:
     void WriteImage(const string &filename, const TwoDArray<Color> &image, int xres, int yres) const;
     TwoDArray<Color> FloatImageToColor(const TwoDArray<float> &image) const;
@@ -73,7 +75,7 @@ private:
     int xPixelStart, yPixelStart;
     int xPixelCount, yPixelCount;
     const float jouni;
-    const RandomParameterFilter::Quality quality;
+    const string quality;
 
     // Storing the image, features and their variance 
     // reconstructed by default filter

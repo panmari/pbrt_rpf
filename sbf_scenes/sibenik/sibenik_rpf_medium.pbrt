@@ -5,7 +5,7 @@ Accelerator "bvh"
 Film "rpfimage"    
     "integer xresolution"    [500] "integer yresolution" [500]
     "string filename"        ["sibenik_rpf.exr"]
-    "bool dumpfeaturebuffer" ["false"]
+    "bool dumpfeaturebuffer" ["true"]
     "float jouni"	     [0.02]
 
 #Sampler "lowdiscrepancy" "integer pixelsamples" [8]

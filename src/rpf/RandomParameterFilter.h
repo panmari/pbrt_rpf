@@ -52,17 +52,18 @@ public:
 	    };
 
     RandomParameterFilter(const int width, const int height,
-    		const int spp, const float jouni, const Quality quality,
+    		const int spp, const float jouni,
     		vector<SampleData> &allSamples);
 
     void Apply();
+
+    void setQuality(const string quality);
 
 private:
     int h, w, spp;
 
 	FILE *debugLog;
 	vector<SampleData> &allSamples;
-	const RNG rng; //random generator
 	const float jouni;
 
 	void preprocessSamples();
@@ -71,11 +72,11 @@ private:
     void computeWeights(vector<float> &alpha, vector<float> &beta, float &W_r_c, vector<SampleData> &neighbourhood,int iterStep);
     void filterColorSamples(vector<float> &alpha, vector<float> &beta, float W_r_c, vector<SampleData> &neighbourhood, int currentPixelIdx);
     //some helpers
-    inline float sqr(float a) {return a*a;};
-    inline float rcp(const float a) { return (a) ? 1.f/ a : 0.f; };
-    void getPixelMeanAndStd(int pixelIdx, SampleData &sampleMean, SampleData &sampleStd);
-    void getGaussian(float stddev, float &x, float &y) const;
-    SampleData& getRandomSampleAt(const int x, const int y, int &idx); //TODO: long for veeery big images?
+    inline float sqr(float a) const {return a*a;};
+    inline float rcp(const float a) const { return (a) ? 1.f/ a : 0.f; };
+    void getPixelMeanAndStd(int pixelIdx, SampleData &sampleMean, SampleData &sampleStd) const;
+    void getGaussian(const float stddev, float &x, float &y, RNG &rng) const;
+    SampleData& getRandomSampleAt(const int x, const int y, int &idx, RNG &rng) const; //TODO: long for veeery big images?
 };
 
 #endif
