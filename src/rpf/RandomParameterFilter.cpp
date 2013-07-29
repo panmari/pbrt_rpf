@@ -28,7 +28,7 @@
 
  */
 //debugging stuff
-#define DEBUG true
+#define DEBUG false
 #define DEBUG_PIXEL_NR 173+100*w
 //910344/spp
 //200 + 200*w
@@ -59,7 +59,7 @@ int MAX_SAMPLES[4];
 
 RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 		const int spp, const float _jouni, Quality quality, vector<SampleData> &_allSamples) :
-	allSamples(_allSamples), rng(RNG(42)), jouni(_jouni) {
+	allSamples(_allSamples), jouni(_jouni) {
 	this->w = width;
 	this->h = height;
 	this->spp = spp;
@@ -164,6 +164,7 @@ void RandomParameterFilter::dumpIntermediateResults(int iterStep) {
 void RandomParameterFilter::preprocessSamples() {
 	printf("Preprocessing... \n");
 	vector<int> pixelWithInvalidSamplesCount(spp);
+	RNG rng(42);
 	for (uint pixelOffset = 0; pixelOffset < allSamples.size(); pixelOffset+= spp) {
 		SampleData pixelValidSamplesMean;
 		pixelValidSamplesMean.reset();
@@ -240,19 +241,20 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 
 	SampleData pixelMean, pixelStd;
 	getPixelMeanAndStd(pixelIdx, pixelMean, pixelStd);
+	RNG rng(pixelIdx);
 	for (int i = 0; i < maxSamples - spp; i++) {
 		int x = 0, y = 0, idx; // x, y are only set to prevent warning
 		//retry, as long as its not in picture or original pixel
 		do {
 			float offsetX, offsetY;
-			getGaussian(stdv, offsetX, offsetY);
+			getGaussian(stdv, offsetX, offsetY, rng);
 			if (CROP_BOX && (fabs(offsetX) >= boxsize/2.f || fabs(offsetY) >= boxsize/2.f))		// get only pixels inside of 'box'
 				continue;
 			x = pixelMean.x + int(floor(offsetX+0.5f));
 			y = pixelMean.y + int(floor(offsetY+0.5f));
 		} while((x == pixelMean.x && y == pixelMean.y) || 			// can not be same pixel
 				x < 0 || y < 0 || x >= w || y >= h);				// or outside of image
-		SampleData &sample = getRandomSampleAt(x, y, idx);
+		SampleData &sample = getRandomSampleAt(x, y, idx, rng);
 		bool flag = true;
 		for (int f = FEATURES_OFFSET; f < FEATURES_SIZE && flag; f++) {
 			const float lim = (f < 6) ? 30.f : 3.f;
@@ -480,7 +482,7 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
  * Only x, y are taken from the first sample of the pixel and assigned to pixelMean
  */
 void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
-		SampleData &pixelMean, SampleData &pixelStd) {
+		SampleData &pixelMean, SampleData &pixelStd) const {
 	SampleData pixelMeanSquare;
 	pixelMean.reset(); pixelMeanSquare.reset();
 	//set x and y separately
@@ -502,7 +504,7 @@ void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
 	}
 }
 
-void RandomParameterFilter::getGaussian(float stddev, float &x, float &y) const {
+void RandomParameterFilter::getGaussian(const float stddev, float &x, float &y, RNG &rng) const {
 	// Box-Muller method, adapted from @ jtlehtin's code.
 	float S, V1, V2;
 	do {
@@ -515,7 +517,7 @@ void RandomParameterFilter::getGaussian(float stddev, float &x, float &y) const 
 	y = sqrt(-2 * log(S) / S) * V2 * stddev;
 }
 
-SampleData& RandomParameterFilter::getRandomSampleAt(const int x, int y, int &idx) {
+SampleData& RandomParameterFilter::getRandomSampleAt(const int x, int y, int &idx, RNG &rng) const {
 	idx = (x + y*w)*spp + (int)(spp*rng.RandomFloat());
 	return allSamples[idx];
 }
