@@ -65,7 +65,8 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 	this->spp = spp;
 	if (DEBUG) {
 		this->debugLog = fopen("rpf.log", "w");
-		fprintf(debugLog, "Number of samples: %lu", allSamples.size());
+		fprintf(debugLog, "Number of samples: %lu, size: %dx%d, spp: %d \n",
+				allSamples.size(), w, h, spp);
 	}
 	for (int i = 0; i < 4; i++) {
 		MAX_SAMPLES[i] = sqr(BOX_SIZE[i]) * spp;
@@ -81,17 +82,14 @@ void RandomParameterFilter::Apply() {
 	gettimeofday(&startTime, NULL);
 	preprocessSamples();
 
-	if (DEBUG) {
-		fprintf(debugLog, "Debugging pixel nr %d, at %d, %d", DEBUG_PIXEL_NR, DEBUG_PIXEL_NR%w, DEBUG_PIXEL_NR/w);
-	}
-
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + std::to_string(iterStep + 1) + " of 4");
 		if (DEBUG) fprintf(debugLog, "\n*** Starting pass number %d ***\n", iterStep);
-#pragma omp parallel for num_threads(PbrtOptions.nCores)
 #if DEBUG
 		for (int pixel_nr = DEBUG_PIXEL_NR; pixel_nr <= DEBUG_PIXEL_NR; pixel_nr++) {
+			fprintf(debugLog, "Debugging pixel nr %d, at %d, %d \n", pixel_nr, pixel_nr%w, (int)pixel_nr/w);
 #else
+#pragma omp parallel for num_threads(PbrtOptions.nCores)
 		for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
 #endif
 			const int pixel_idx = pixel_nr * spp;
