@@ -1,8 +1,11 @@
 # PBRT with support for Random Parameter Filtering (RPF)
 
-Sample scenes for rendering are provided in sbf_scenes. For now, the only 
-configurable parameter is jouni, which takes on a default value of 0.02
-if not specified. 
+Sample scenes for rendering are provided in sbf_scenes. Configurable parameters are:
+
+* **jouni:** Should be adapted if you have very noisy/unnoisy scenes (default: 0.02)
+* **quality:** How many pixels are considered when compiling neighbourhood. 
+This impacts computing time by a large amount. Available options are `high`, `medium`, defaulting to `medium`. 
+
 
 ## Considered data from samples
 
@@ -17,6 +20,9 @@ This can be changed in `rpf/SampleData.h`.
 * albedo/rho
 
 ### Considered random parameters
+
+Most likely you want to change this scene dependant. Change the parameter `RANDOM_PARAMETERS_SIZE` in `rpf/RandomParameterFilter.cpp` for this.
+TODO: make this a configurable parameter.
 
 * first reflection direction
 * lens position
