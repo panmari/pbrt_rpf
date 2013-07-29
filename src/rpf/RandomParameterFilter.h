@@ -52,10 +52,12 @@ public:
 	    };
 
     RandomParameterFilter(const int width, const int height,
-    		const int spp, const float jouni, const Quality quality,
+    		const int spp, const float jouni,
     		vector<SampleData> &allSamples);
 
     void Apply();
+
+    void setQuality(const string quality);
 
 private:
     int h, w, spp;

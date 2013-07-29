@@ -49,7 +49,7 @@
 class RPF {
 public:       
 
-    RPF(int xs, int ys, int w, int h, float jouni, RandomParameterFilter::Quality qual);
+    RPF(int xs, int ys, int w, int h, float jouni, string qual);
 
     void AddSample(const CameraSample &sample, const Spectrum &L, 
             const Intersection &isect);
@@ -75,7 +75,7 @@ private:
     int xPixelStart, yPixelStart;
     int xPixelCount, yPixelCount;
     const float jouni;
-    const RandomParameterFilter::Quality quality;
+    const string quality;
 
     // Storing the image, features and their variance 
     // reconstructed by default filter

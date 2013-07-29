@@ -18,6 +18,10 @@ int main(int argc, char** argv)
     if (argc == 1)
         Severe("No base name provided!");
     string filename(argv[1]);
+    string quality;
+    if (argc == 3)
+    	quality = string(argv[2]);
+    else quality = "medium";
 
     vector<SampleData> allSamples;
     int w, h, spp;
@@ -30,7 +34,8 @@ int main(int argc, char** argv)
 	dump.read((char*)&(allSamples[0]), allSamples.size() * sizeof(SampleData));
 	dump.close();
 
-    RandomParameterFilter rpf(w, h, spp, 0.02f, RandomParameterFilter::Quality::MEDIUM, allSamples);
+    RandomParameterFilter rpf(w, h, spp, 0.02f, allSamples);
+    rpf.setQuality(quality);
     rpf.Apply();
 
     TwoDArray<Color> fltImg = TwoDArray<Color>(w, h);

@@ -163,6 +163,10 @@ int main(int argc, char** argv)
 {
     if (argc == 1)
         Severe("No base name provided!");
+    string quality;
+    if (argc == 3)
+    	quality = string(argv[2]);
+    else quality = "medium";
 
     vector<SampleData> allSamples;
     int w, h, spp;
@@ -170,7 +174,8 @@ int main(int argc, char** argv)
     smoothNormals(allSamples, w, h, spp);
     RPF::dumpAsBinary("jl_dump", w, h, spp, allSamples);
 
-    RandomParameterFilter rpf(w, h, spp, 0.02f, RandomParameterFilter::Quality::MEDIUM, allSamples);
+    RandomParameterFilter rpf(w, h, spp, 0.02f, allSamples);
+    rpf.setQuality(quality);
     rpf.Apply();
 
     TwoDArray<Color> fltImg = TwoDArray<Color>(w, h);

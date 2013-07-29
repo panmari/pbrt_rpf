@@ -58,7 +58,7 @@ const float MAX_SAMPLES_FACTOR_HIGH[] = { 0.5f, 0.5f, 0.5f, 0.5f }; // by sen
 int MAX_SAMPLES[4];
 
 RandomParameterFilter::RandomParameterFilter(const int width, const int height,
-		const int spp, const float _jouni, Quality quality, vector<SampleData> &_allSamples) :
+		const int spp, const float _jouni, vector<SampleData> &_allSamples) :
 	allSamples(_allSamples), jouni(_jouni) {
 	this->w = width;
 	this->h = height;
@@ -67,13 +67,6 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 		this->debugLog = fopen("rpf.log", "w");
 		fprintf(debugLog, "Number of samples: %lu, size: %dx%d, spp: %d \n",
 				allSamples.size(), w, h, spp);
-	}
-	for (int i = 0; i < 4; i++) {
-		MAX_SAMPLES[i] = sqr(BOX_SIZE[i]) * spp;
-		if (quality == MEDIUM)
-			MAX_SAMPLES[i] *= MAX_SAMPLES_FACTOR_MEDIUM[i];
-		else
-			MAX_SAMPLES[i] *= MAX_SAMPLES_FACTOR_HIGH[i];
 	}
 }
 
@@ -518,4 +511,23 @@ void RandomParameterFilter::getGaussian(const float stddev, float &x, float &y, 
 SampleData& RandomParameterFilter::getRandomSampleAt(const int x, int y, int &idx, RNG &rng) const {
 	idx = (x + y*w)*spp + (int)(spp*rng.RandomFloat());
 	return allSamples[idx];
+}
+
+void RandomParameterFilter::setQuality(string quality_string){
+	Quality quality;
+	if (quality_string == "high" || quality_string == "sen") {
+		quality = Quality::HIGH;
+		printf("Filter quality set to high\n");
+	}
+	else {
+		quality = RandomParameterFilter::Quality::MEDIUM;
+		printf("Filter quality set to medium\n");
+	}
+	for (int i = 0; i < 4; i++) {
+		MAX_SAMPLES[i] = sqr(BOX_SIZE[i]) * spp;
+		if (quality == Quality::MEDIUM)
+			MAX_SAMPLES[i] *= MAX_SAMPLES_FACTOR_MEDIUM[i];
+		else
+			MAX_SAMPLES[i] *= MAX_SAMPLES_FACTOR_HIGH[i];
+	}
 }
