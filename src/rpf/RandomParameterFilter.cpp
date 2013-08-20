@@ -32,7 +32,7 @@
 #define DEBUG_PIXEL_NR 173+100*w
 //910344/spp
 //200 + 200*w
-#define DUMP_INTERMEDIATE_RESULTS false
+#define DUMP_INTERMEDIATE_RESULTS true
 
 //some parameters that should stay true for most things
 #define CROP_BOX true
@@ -68,6 +68,8 @@ RandomParameterFilter::RandomParameterFilter(const int width, const int height,
 		fprintf(debugLog, "Number of samples: %lu, size: %dx%d, spp: %d \n",
 				allSamples.size(), w, h, spp);
 	}
+	printf("Number of samples: %lu, size: %dx%d, spp: %d \n",
+			allSamples.size(), w, h, spp);
 }
 
 void RandomParameterFilter::Apply() {
