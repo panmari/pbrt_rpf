@@ -43,11 +43,9 @@ struct SampleData {
 #define IMG_POS_OFFSET				18
 #define IMG_POS_SIZE				2
 #define	RANDOM_PARAMS_OFFSET 		20
-// You'll most likely want to change this:
-#define RANDOM_PARAMS_SIZE			6
 #define LAST_NORMALIZED_OFFSET		26
 
-	// Some handy accessor methods, thx @jklethinen
+	// Some handy accessor methods, thx @jlehtinen
 	// asserts that float and int are the same length
 	static uint getSize()					{ return sizeof(SampleData)/sizeof(float); }
 	void   operator+=(const SampleData& s)	{ for(uint i=0;i<getSize();i++) (*this)[i] += s[i]; }
