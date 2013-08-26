@@ -81,16 +81,12 @@ void RandomParameterFilter::Apply() {
 	gettimeofday(&startTime, NULL);
 	preprocessSamples();
 	TwoDArray<Color> fltImg = TwoDArray<Color>(w, h);
-	for (int iterStep = 0; iterStep < 1; iterStep++) {
+	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + std::to_string(iterStep + 1) + " of 4");
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
 		for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
 			float D_r_c = 0.f, D_p_c = 0.f, D_f_c = 0.f;
-			vector<SampleData> neighbourhood;
-			neighbourhood.resize(spp);
-			for (int i=0; i < spp; i++) {
-				neighbourhood.push_back(allSamples[pixel_nr*spp + i]);
-			}
+			vector<SampleData> neighbourhood = determineNeighbourhood(BOX_SIZE[iterStep], MAX_SAMPLES[iterStep], pixel_nr*spp);
 			MutualInformation mi;
 			vector<float> m_D_fk_c = vector<float>(FEATURES_SIZE);
 			std::fill(m_D_fk_c.begin(), m_D_fk_c.end(), 0.f);
@@ -122,9 +118,9 @@ void RandomParameterFilter::Apply() {
 			const float D_a_c = D_r_c + D_p_c + D_f_c;
 			fltImg(s.x, s.y) = Color(D_r_c*rcp(D_a_c));
 		}
+		WriteImage("lens_dependancy_color"+ std::to_string(iterStep) + ".exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
+								 w, h, 0, 0);
 	}
-	WriteImage("lens_dependancy_color.exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
-						 w, h, 0, 0);
 	gettimeofday(&endTime, NULL);
 	int duration(endTime.tv_sec - startTime.tv_sec);
 	printf("The whole rendering process took %d minutes and %d seconds \n", duration/60, duration%60);
@@ -201,6 +197,267 @@ void RandomParameterFilter::preprocessSamples() {
 		printf("No invalid samples found. \n");
 	}
 	printf("Done! \n");
+}
+
+
+vector<SampleData> RandomParameterFilter::determineNeighbourhood(
+		const int boxsize, const int maxSamples, const int pixelIdx) {
+	vector<SampleData> neighbourhood;
+	neighbourhood.reserve(maxSamples);
+
+	// add all samples of current pixel
+	for (int i = 0; i < spp; i++) {
+		neighbourhood.push_back(allSamples[pixelIdx + i]);
+	}
+
+	// add more samples from neighbourhood
+	const float stdv = boxsize / 4.f;
+
+	SampleData pixelMean, pixelStd;
+	getPixelMeanAndStd(pixelIdx, pixelMean, pixelStd);
+	RNG rng(pixelIdx);
+	for (int i = 0; i < maxSamples - spp; i++) {
+		int x = 0, y = 0, idx; // x, y are only set to prevent warning
+		//retry, as long as its not in picture or original pixel
+		do {
+			float offsetX, offsetY;
+			getGaussian(stdv, offsetX, offsetY, rng);
+			if (CROP_BOX && (fabs(offsetX) >= boxsize/2.f || fabs(offsetY) >= boxsize/2.f))		// get only pixels inside of 'box'
+				continue;
+			x = pixelMean.x + int(floor(offsetX+0.5f));
+			y = pixelMean.y + int(floor(offsetY+0.5f));
+		} while((x == pixelMean.x && y == pixelMean.y) || 			// can not be same pixel
+				x < 0 || y < 0 || x >= w || y >= h);				// or outside of image
+		SampleData &sample = getRandomSampleAt(x, y, idx, rng);
+		bool flag = true;
+		for (int f = FEATURES_OFFSET; f < FEATURES_SIZE && flag; f++) {
+			const float lim = (f < 6) ? 30.f : 3.f;
+			if( fabs(sample[f] - pixelMean[f]) > lim*pixelStd[f] &&
+					(fabs(sample[f] - pixelMean[f]) > 0.1f || pixelStd[f] > 0.1f)) {
+					flag = false;
+			}
+		}
+		if (flag) {
+			//by default, this pushes a copy there
+			neighbourhood.push_back(sample);
+		}
+	}
+
+	if (DEBUG) {
+		fprintf(debugLog, "\nSamples in Neighbourhood (%ld): \n", neighbourhood.size());
+		for (unsigned int i=0;i<neighbourhood.size();i++) {
+			fprintf(debugLog, "[%d,%d]", neighbourhood[i].x, neighbourhood[i].y);
+		}
+	}
+
+	// Normalization of neighbourhood
+	SampleData nMean, nMeanSquare, nStd;
+	nMean.reset(); nMeanSquare.reset();
+	//TODO: swap loops, see if faster
+	for (int f = 0; f < LAST_NORMALIZED_OFFSET; f++) {
+		for (SampleData& s: neighbourhood) {
+			nMean[f] += s[f];
+			nMeanSquare[f] += sqr(s[f]);
+		}
+		nMean[f] /= neighbourhood.size();
+		nMeanSquare[f] /= neighbourhood.size();
+		nStd[f] = sqrt(max(0.f, nMeanSquare[f] - sqr(nMean[f])));
+	}
+	for (int f = 0; f < LAST_NORMALIZED_OFFSET; f++) {
+		float overStd = rcp(nStd[f]);
+		for (SampleData& s: neighbourhood) {
+			s[f] = (s[f] - nMean[f])*overStd;
+		}
+	}
+	return neighbourhood;
+}
+
+void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &beta,
+		float &W_r_c, vector<SampleData> &neighbourhood,int iterStep) {
+	MutualInformation mi;
+	// dependency for colors
+
+	W_r_c = 0.f;
+	float D_r_c = 0.f, D_p_c = 0.f, D_f_c = 0.f;
+	vector<float> m_D_fk_c = vector<float>(FEATURES_SIZE);
+	std::fill(m_D_fk_c.begin(), m_D_fk_c.end(), 0.f);
+
+	for(int l=0; l < COLOR_SIZE; l++) {
+		float m_D_r_cl = 0.f;
+		float m_D_p_cl = 0.f;
+		float m_D_f_cl = 0.f;
+		for(int k=0; k < RANDOM_PARAMS_SIZE; k++) {
+			m_D_r_cl += mi.mutualinfo(neighbourhood,
+					l + COLOR_OFFSET, k + RANDOM_PARAMS_OFFSET);
+		}
+		for(int k=0; k < IMG_POS_SIZE; k++) {
+			m_D_p_cl += mi.mutualinfo(neighbourhood,
+					l + COLOR_OFFSET, k + IMG_POS_OFFSET);
+		}
+		for(int k=0; k < FEATURES_SIZE; k++) {
+			// needs to be saved per feature and per color
+			const float m_D_fk_cl = mi.mutualinfo(neighbourhood,
+					l + COLOR_OFFSET, k + FEATURES_OFFSET);
+			m_D_fk_c[k] += m_D_fk_cl;
+			m_D_f_cl += m_D_fk_cl;
+		}
+		D_r_c += m_D_r_cl;
+		D_p_c += m_D_p_cl;
+		D_f_c += m_D_f_cl;
+
+		// sets alpha channel dependent
+		if (PER_CHANNEL_ALPHA) {
+			const float W_r_cl = m_D_r_cl*rcp(m_D_r_cl + m_D_p_cl);
+			// yields better results with (dubious) factor 2
+			alpha[l] = max(1 - 2*(1 + 0.1f*iterStep)*W_r_cl, 0.f);
+			W_r_c += W_r_cl;
+		}
+	}
+
+	// sets alpha for every channel to the same value
+	if (!PER_CHANNEL_ALPHA) {
+		W_r_c = D_r_c*rcp(D_r_c + D_p_c);
+		std::fill(alpha.begin(), alpha.end(), max(1 - (1 + 0.1f*iterStep)*W_r_c, 0.f));
+	}
+
+
+	const float D_a_c = D_r_c + D_p_c + D_f_c;
+
+	for(int k = 0; k < FEATURES_SIZE; k++) {
+		float m_D_fk_r = 0.f, m_D_fk_p = 0.f;
+		for(int l = 0; l < RANDOM_PARAMS_SIZE; l++) {
+			m_D_fk_r += mi.mutualinfo(neighbourhood,
+					l + RANDOM_PARAMS_OFFSET, k + FEATURES_OFFSET);
+		}
+		for(int l=0; l < IMG_POS_SIZE; l++) {
+			m_D_fk_p += mi.mutualinfo(neighbourhood,
+					l + IMG_POS_OFFSET, k + FEATURES_OFFSET);
+		}
+		const float W_fk_r = m_D_fk_r * rcp(m_D_fk_r + m_D_fk_p);
+		const float W_fk_c = m_D_fk_c[k] * rcp(D_a_c);
+		beta[k] = W_fk_c * max(1-(1+0.1f*iterStep)*W_fk_r, 0.f);
+	}
+}
+
+void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<float> &beta, float W_r_c,
+		vector<SampleData> &neighbourhood, int pixelIdx) {
+	const float var = 8*jouni/spp;
+
+	const float scale_f = -sqr(1 - W_r_c) / (2*var);
+	const float scale_c = scale_f;
+	if (DEBUG) fprintf(debugLog, "\nInput colors vs Output colors (before HDR Clamp):\n");
+	for (int i=0; i<spp; i++) {
+		float color[3];
+		for (int j=0; j<3;j++) {color[j] = 0.f; }
+		float sum_relative_weights = 0.f;
+		for (uint j=0; j<neighbourhood.size(); j++) {
+			float dist_c = 0.f;
+			for (int k=0; k<COLOR_SIZE; k++) {
+				const int offset = k + COLOR_OFFSET;
+				dist_c += alpha[k] * sqr(neighbourhood[i][offset] - neighbourhood[j][offset]);
+			}
+
+			float dist_f = 0.f;
+			for (int k=0; k<FEATURES_SIZE; k++) {
+				const int offset = k + FEATURES_OFFSET;
+				dist_f += beta[k] * sqr(neighbourhood[i][offset] - neighbourhood[j][offset]);
+			}
+
+			const float w_ij = fmath::exp(scale_c*dist_c + scale_f*dist_f);
+			sum_relative_weights += w_ij;
+			for (int k=0; k < 3; k++) {
+				color[k] += neighbourhood[j].inputColors[k]*w_ij; //should not be normalized, check?
+			}
+		}
+		SampleData &s = allSamples[pixelIdx + i];
+		for (int k = 0; k <3; k++) { //can I assign the whole array at once?
+			s.outputColors[k] = color[k]/sum_relative_weights;
+			if (DEBUG) fprintf(debugLog, "%-.4f, %-.4f\n", s.inputColors[k], s.outputColors[k]);
+		}
+	}
+
+	if (HDR_CLAMP) {
+		float colorMean[3], colorMeanSquare[3], colorStd[3], colorMeanAfter[3];;
+		for (int i=0; i<3; i++) { colorMean[i] = colorMeanSquare[i] = colorMeanAfter[i] = 0.f; }
+		for (int i=0; i<spp; i++) {
+			SampleData &s = allSamples[pixelIdx + i];
+			for(int j=0; j<3; j++) {
+				colorMean[j] += s.outputColors[j];
+				colorMeanSquare[j] += sqr(s.outputColors[j]);
+			}
+		}
+		for (int i=0; i<3; i++) {
+			colorMean[i] /= spp;
+			colorMeanSquare[i] /= spp;
+			colorStd[i] = sqrt(max(0.f, colorMeanSquare[i] - sqr(colorMean[i])));
+		}
+	#define STD_FACTOR 1
+		for (int i=0; i<spp; i++) {
+			SampleData &s = allSamples[pixelIdx + i];
+			if( fabs(s.outputColors[0] - colorMean[0]) > STD_FACTOR*colorStd[0] ||
+				fabs(s.outputColors[1] - colorMean[1]) > STD_FACTOR*colorStd[1] ||
+				fabs(s.outputColors[2] - colorMean[2]) > STD_FACTOR*colorStd[2]) {
+				for (int j=0; j<3;j++) {
+					s.outputColors[j] = colorMean[j];
+				}
+			}
+			for (int j=0; j<3; j++) {
+				colorMeanAfter[j] += s.outputColors[j];
+			}
+		}
+
+		if (REINSERT_ENERGY_HDR_CLAMP) {
+			for (int j=0; j<3; j++) {
+				colorMeanAfter[j] /= spp;
+			}
+
+			// reinsert energy from HDR clamp
+			float lostEnergyPerSample[3];
+			for (int i=0; i<3; i++) { lostEnergyPerSample[i] = colorMean[i] - colorMeanAfter[i]; }
+			for (int i=0; i<spp; i++) {
+				SampleData &s = allSamples[pixelIdx + i];
+				for (int j=0; j<3; j++) {
+					s.outputColors[j] += lostEnergyPerSample[j];
+				}
+			}
+		}
+	}
+
+	if (DEBUG) {
+		fprintf(debugLog, "After HDR-clamp and reinsertion of energy: \n");
+		for (int i = 0; i < spp; i++) { //can I assign the whole array at once?
+			SampleData &s = allSamples[pixelIdx + i];
+			for (int k=0; k<3; k++) fprintf(debugLog, "%-.4f, %-.4f\n", s.inputColors[k], s.outputColors[k]);
+		}
+	}
+}
+
+/**
+ * Only the features of the returned SampleData contain the desired values.
+ * Everything else is set to 0 (rgb, random params etc.)
+ * Only x, y are taken from the first sample of the pixel and assigned to pixelMean
+ */
+void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
+		SampleData &pixelMean, SampleData &pixelStd) const {
+	SampleData pixelMeanSquare;
+	pixelMean.reset(); pixelMeanSquare.reset();
+	//set x and y separately
+	pixelMean.x = allSamples[pixelIdx].x;
+	pixelMean.y = allSamples[pixelIdx].y;
+	for (int sampleOffset = 0; sampleOffset < spp; sampleOffset++) {
+		const SampleData &currentSample = allSamples[pixelIdx + sampleOffset];
+		for(int f=0;f<FEATURES_SIZE;f++)
+		{
+			pixelMean[f] += currentSample[f];
+			pixelMeanSquare[f] += sqr(currentSample[f]);
+		}
+	}
+	for(int f=0;f<FEATURES_SIZE;f++) {
+		pixelMean[f] /= spp;
+		pixelMeanSquare[f] /= spp;
+
+		pixelStd[f] = sqrt(max(0.f, pixelMeanSquare[f] - sqr(pixelMean[f]) ));	// max() avoids accidental NaNs
+	}
 }
 
 void RandomParameterFilter::getGaussian(const float stddev, float &x, float &y, RNG &rng) const {
