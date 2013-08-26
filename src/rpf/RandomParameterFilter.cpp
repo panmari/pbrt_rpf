@@ -118,7 +118,9 @@ void RandomParameterFilter::Apply() {
 				D_f_c += m_D_f_cl;
 			}
 			SampleData &s = allSamples[pixel_nr*8];
-			fltImg(s.x, s.y) = Color(D_r_c);
+			//Todo: use D_a_c?
+			const float D_a_c = D_r_c + D_p_c + D_f_c;
+			fltImg(s.x, s.y) = Color(D_r_c*rcp(D_r_c + D_p_c));
 		}
 	}
 	WriteImage("lens_dependancy_color.exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
@@ -126,21 +128,6 @@ void RandomParameterFilter::Apply() {
 	gettimeofday(&endTime, NULL);
 	int duration(endTime.tv_sec - startTime.tv_sec);
 	printf("The whole rendering process took %d minutes and %d seconds \n", duration/60, duration%60);
-}
-
-void RandomParameterFilter::dumpIntermediateResults(int iterStep) {
-	for (uint i=0; i < allSamples.size(); i+=spp) {
-		Color c;
-		for (int j=0; j<spp; j++)
-			for(int k=0; k<3;k++){
-				//TODO: if jkl_dump is used, this should also be multiplied with rho
-				c[k] += allSamples[i+j].outputColors[k]; //*allSamples[i+j].rho[k];
-			}
-		c /= spp;
-
-	}
-	// passing null as alpha makes it 1.f for pixel
-
 }
 
 /**
