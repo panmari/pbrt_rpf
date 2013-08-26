@@ -39,9 +39,9 @@
 #define HDR_CLAMP true									// both true
 // For some scenes this is very problematic, because spikes are not properly removed if activated...
 // But does also make tone mapping necessary!
-#define REINSERT_ENERGY_HDR_CLAMP true					// jlehtinen => true, sen => false
+#define REINSERT_ENERGY_HDR_CLAMP false					// jlehtinen => true, sen => false
 #define PER_CHANNEL_ALPHA false							// jlehtinen => false, sen => true
-#define PREAPPLY_GAMMA 2.2								//Set to 0 if should not be preapplied
+#define PREAPPLY_GAMMA 0								// Set to 0 if should not be preapplied, usually a bad idea
 // You'll most likely want to change this:
 #define RANDOM_PARAMS_SIZE 3 // TODO: make this a user-defined parameter.
 
@@ -172,7 +172,7 @@ void RandomParameterFilter::preprocessSamples() {
 			SampleData &s = allSamples[idx];
 			if (PREAPPLY_GAMMA) {
 				for(int i=0; i<3; i++) {
-					s.inputColors[i] = s.rgb[i] = pow(s.rgb[i], PREAPPLY_GAMMA);
+					s.inputColors[i] = pow(s.rgb[i], 1/PREAPPLY_GAMMA);
 				}
 			}
 			bool valid = true;
