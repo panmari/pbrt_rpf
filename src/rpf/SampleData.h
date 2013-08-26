@@ -42,7 +42,7 @@ struct SampleData {
 #define COLOR_SIZE					3
 #define IMG_POS_OFFSET				18
 #define IMG_POS_SIZE				2
-#define	RANDOM_PARAMS_OFFSET 		20
+#define	RANDOM_PARAMS_OFFSET 		23
 #define LAST_NORMALIZED_OFFSET		26
 
 	// Some handy accessor methods, thx @jlehtinen
