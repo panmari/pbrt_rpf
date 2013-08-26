@@ -32,16 +32,18 @@
 #define DEBUG_PIXEL_NR 173+100*w
 //910344/spp
 //200 + 200*w
-#define DUMP_INTERMEDIATE_RESULTS false
+#define DUMP_INTERMEDIATE_RESULTS true
 
 //some parameters that should stay true for most cases
 #define CROP_BOX true                 				  	// jlehtinen => true, sen => false?
 #define HDR_CLAMP true									// both true
+// For some scenes this is very problematic, because spikes are not properly removed if activated...
+// But does also make tone mapping necessary!
 #define REINSERT_ENERGY_HDR_CLAMP true					// jlehtinen => true, sen => false
-#define PER_CHANNEL_ALPHA true							// jlehtinen => false, sen => true
-
+#define PER_CHANNEL_ALPHA false							// jlehtinen => false, sen => true
+#define PREAPPLY_GAMMA 2.2								//Set to 0 if should not be preapplied
 // You'll most likely want to change this:
-#define RANDOM_PARAMS_SIZE 5 // TODO: make this a user-defined parameter.
+#define RANDOM_PARAMS_SIZE 3 // TODO: make this a user-defined parameter.
 
 #include "RandomParameterFilter.h"
 
@@ -168,6 +170,11 @@ void RandomParameterFilter::preprocessSamples() {
 		for (int sampleOffset = 0; sampleOffset < spp; sampleOffset++) {
 			uint idx = pixelOffset + sampleOffset;
 			SampleData &s = allSamples[idx];
+			if (PREAPPLY_GAMMA) {
+				for(int i=0; i<3; i++) {
+					s.inputColors[i] = s.rgb[i] = pow(s.rgb[i], PREAPPLY_GAMMA);
+				}
+			}
 			bool valid = true;
 			// invalid, if second or third origin have one component very far off
 			for (int f = FEATURES_OFFSET; f < 6; f++) {
