@@ -43,7 +43,7 @@
 #define PER_CHANNEL_ALPHA false							// jlehtinen => false, sen => true
 #define PREAPPLY_GAMMA 0								// Set to 0 if should not be preapplied, usually a bad idea
 // You'll most likely want to change this:
-#define RANDOM_PARAMS_SIZE 5 // TODO: make this a user-defined parameter.
+#define RANDOM_PARAMS_SIZE 2 // TODO: make this a user-defined parameter.
 
 #include "RandomParameterFilter.h"
 
@@ -117,10 +117,10 @@ void RandomParameterFilter::Apply() {
 				D_p_c += m_D_p_cl;
 				D_f_c += m_D_f_cl;
 			}
-			SampleData &s = allSamples[pixel_nr*8];
+			SampleData &s = allSamples[pixel_nr*spp];
 			//Todo: use D_a_c?
 			const float D_a_c = D_r_c + D_p_c + D_f_c;
-			fltImg(s.x, s.y) = Color(D_r_c*rcp(D_r_c + D_p_c));
+			fltImg(s.x, s.y) = Color(D_r_c*rcp(D_a_c));
 		}
 	}
 	WriteImage("lens_dependancy_color.exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
