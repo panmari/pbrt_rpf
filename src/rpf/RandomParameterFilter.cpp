@@ -34,10 +34,16 @@
 //200 + 200*w
 #define DUMP_INTERMEDIATE_RESULTS true
 
-//some parameters that should stay true for most things
-#define CROP_BOX true
-#define HDR_CLAMP true
-#define REINSERT_ENERGY_HDR_CLAMP true
+//some parameters that should stay true for most cases
+#define CROP_BOX true                 				  	// jlehtinen => true, sen => false?
+#define HDR_CLAMP true									// both true
+// For some scenes this is very problematic, because spikes are not properly removed if activated...
+// But does also make tone mapping necessary!
+#define REINSERT_ENERGY_HDR_CLAMP false					// jlehtinen => true, sen => false
+#define PER_CHANNEL_ALPHA false							// jlehtinen => false, sen => true
+#define PREAPPLY_GAMMA 0								// Set to 0 if should not be preapplied, usually a bad idea
+// You'll most likely want to change this:
+#define RANDOM_PARAMS_SIZE 3 // TODO: make this a user-defined parameter.
 
 #include "RandomParameterFilter.h"
 
@@ -137,17 +143,18 @@ void RandomParameterFilter::Apply() {
 
 void RandomParameterFilter::dumpIntermediateResults(int iterStep) {
 	TwoDArray<Color> fltImg = TwoDArray<Color>(w, h);
-	// Dumping img (and multiply with rho/albedo)
 	for (uint i=0; i < allSamples.size(); i+=spp) {
 		Color c;
 		for (int j=0; j<spp; j++)
 			for(int k=0; k<3;k++){
+				//TODO: if jkl_dump is used, this should also be multiplied with rho
 				c[k] += allSamples[i+j].outputColors[k]; //*allSamples[i+j].rho[k];
 			}
 		c /= spp;
 		fltImg(allSamples[i].x, allSamples[i].y) = c;
 	}
-	::WriteImage("pass" + to_string(iterStep+1) + ".exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
+	// passing null as alpha makes it 1.f for pixel
+	WriteImage("pass" + to_string(iterStep+1) + ".exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
 					 w, h, 0, 0);
 }
 
@@ -165,6 +172,11 @@ void RandomParameterFilter::preprocessSamples() {
 		for (int sampleOffset = 0; sampleOffset < spp; sampleOffset++) {
 			uint idx = pixelOffset + sampleOffset;
 			SampleData &s = allSamples[idx];
+			if (PREAPPLY_GAMMA) {
+				for(int i=0; i<3; i++) {
+					s.inputColors[i] = pow(s.rgb[i], 1/PREAPPLY_GAMMA);
+				}
+			}
 			bool valid = true;
 			// invalid, if second or third origin have one component very far off
 			for (int f = FEATURES_OFFSET; f < 6; f++) {
@@ -309,69 +321,63 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 	MutualInformation mi;
 	// dependency for colors
 
-	vector<float> m_D_rk_c = vector<float>(RANDOM_PARAMS_SIZE);
-	vector<float> m_D_pk_c = vector<float>(IMG_POS_SIZE);
+	W_r_c = 0.f;
+	float D_r_c = 0.f, D_p_c = 0.f, D_f_c = 0.f;
 	vector<float> m_D_fk_c = vector<float>(FEATURES_SIZE);
-	std::fill(m_D_rk_c.begin(), m_D_rk_c.end(), 0.f );
-	std::fill(m_D_pk_c.begin(), m_D_pk_c.end(), 0.f );
-	std::fill(m_D_fk_c.begin(), m_D_fk_c.end(), 0.f );
+	std::fill(m_D_fk_c.begin(), m_D_fk_c.end(), 0.f);
 
 	for(int l=0; l < COLOR_SIZE; l++) {
+		float m_D_r_cl = 0.f;
+		float m_D_p_cl = 0.f;
+		float m_D_f_cl = 0.f;
 		for(int k=0; k < RANDOM_PARAMS_SIZE; k++) {
-			m_D_rk_c[k] += mi.mutualinfo(neighbourhood,
+			m_D_r_cl += mi.mutualinfo(neighbourhood,
 					l + COLOR_OFFSET, k + RANDOM_PARAMS_OFFSET);
 		}
 		for(int k=0; k < IMG_POS_SIZE; k++) {
-			m_D_pk_c[k] += mi.mutualinfo(neighbourhood,
+			m_D_p_cl += mi.mutualinfo(neighbourhood,
 					l + COLOR_OFFSET, k + IMG_POS_OFFSET);
 		}
 		for(int k=0; k < FEATURES_SIZE; k++) {
-			m_D_fk_c[k] += mi.mutualinfo(neighbourhood,
+			// needs to be saved per feature and per color
+			const float m_D_fk_cl = mi.mutualinfo(neighbourhood,
 					l + COLOR_OFFSET, k + FEATURES_OFFSET);
+			m_D_fk_c[k] += m_D_fk_cl;
+			m_D_f_cl += m_D_fk_cl;
+		}
+		D_r_c += m_D_r_cl;
+		D_p_c += m_D_p_cl;
+		D_f_c += m_D_f_cl;
+
+		// sets alpha channel dependent
+		if (PER_CHANNEL_ALPHA) {
+			const float W_r_cl = m_D_r_cl*rcp(m_D_r_cl + m_D_p_cl);
+			// yields better results with (dubious) factor 2
+			alpha[l] = max(1 - 2*(1 + 0.1f*iterStep)*W_r_cl, 0.f);
+			W_r_c += W_r_cl;
 		}
 	}
 
-	// dependency for scene features
-	vector<vector<float>> m_D_fk_rl = vector<vector<float>>(FEATURES_SIZE);
-	vector<vector<float>> m_D_fk_pl = vector<vector<float>>(FEATURES_SIZE);
-	vector<vector<float>> m_D_fk_cl = vector<vector<float>>(FEATURES_SIZE);
-	std::fill(m_D_fk_rl.begin(), m_D_fk_rl.end(), vector<float>(m_D_rk_c.size()));
-	std::fill(m_D_fk_pl.begin(), m_D_fk_pl.end(), vector<float>(m_D_pk_c.size()));
-	std::fill(m_D_fk_cl.begin(), m_D_fk_cl.end(), vector<float>(COLOR_SIZE)); //three color channels
+	// sets alpha for every channel to the same value
+	if (!PER_CHANNEL_ALPHA) {
+		W_r_c = D_r_c*rcp(D_r_c + D_p_c);
+		std::fill(alpha.begin(), alpha.end(), max(1 - (1 + 0.1f*iterStep)*W_r_c, 0.f));
+	}
+
+	const float D_a_c = D_r_c + D_p_c + D_f_c;
 
 	for(int k = 0; k < FEATURES_SIZE; k++) {
+		float m_D_fk_r = 0.f, m_D_fk_p = 0.f;
 		for(int l = 0; l < RANDOM_PARAMS_SIZE; l++) {
-			m_D_fk_rl[k][l] = mi.mutualinfo(neighbourhood,
+			m_D_fk_r += mi.mutualinfo(neighbourhood,
 					l + RANDOM_PARAMS_OFFSET, k + FEATURES_OFFSET);
 		}
 		for(int l=0; l < IMG_POS_SIZE; l++) {
-			m_D_fk_pl[k][l] = mi.mutualinfo(neighbourhood,
+			m_D_fk_p += mi.mutualinfo(neighbourhood,
 					l + IMG_POS_OFFSET, k + FEATURES_OFFSET);
 		}
-		for(int l=0; l < COLOR_SIZE; l++) {
-			m_D_fk_cl[k][l] = m_D_fk_c[k]/3; // average of color channels
-		}
-	}
-
-	//TODO: do this per color channel?
-	const float D_r_c = boost::accumulate(m_D_rk_c, 0.f);
-	const float D_p_c = boost::accumulate(m_D_pk_c, 0.f);
-	const float D_f_c = boost::accumulate(m_D_fk_c, 0.f);
-	const float D_a_c = D_r_c + D_p_c + D_f_c;
-
-	W_r_c = D_r_c*rcp(D_r_c + D_p_c);
-
-	// set alpha for every channel to the same value
-	std::fill(alpha.begin(), alpha.end(), max(1 - (1 + 0.1f*iterStep)*W_r_c, 0.f));
-
-	for(int k=0;k<FEATURES_SIZE;k++) {
-		const float D_fk_r = boost::accumulate(m_D_fk_rl[k], 0.f);
-		const float D_fk_p = boost::accumulate(m_D_fk_pl[k], 0.f);
-		const float D_fk_c = boost::accumulate(m_D_fk_cl[k], 0.f);
-
-		const float W_fk_r = D_fk_r * rcp(D_fk_r + D_fk_p);
-		const float W_fk_c = D_fk_c * rcp(D_a_c);
-
+		const float W_fk_r = m_D_fk_r * rcp(m_D_fk_r + m_D_fk_p);
+		const float W_fk_c = m_D_fk_c[k] * rcp(D_a_c);
 		beta[k] = W_fk_c * max(1-(1+0.1f*iterStep)*W_fk_r, 0.f);
 	}
 }
