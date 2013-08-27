@@ -38,8 +38,8 @@
 #define CROP_BOX true                 				  	// jlehtinen => true, sen => false?
 #define HDR_CLAMP true									// both true
 // For some scenes this is very problematic, because spikes are not properly removed if activated...
-// But does also make tone mapping necessary!
-#define REINSERT_ENERGY_HDR_CLAMP false					// jlehtinen => true, sen => false
+// But it does also darken these scenes very heavily!
+#define REINSERT_ENERGY_HDR_CLAMP true					// jlehtinen => true, sen => false
 #define PER_CHANNEL_ALPHA false							// jlehtinen => false, sen => true
 #define PREAPPLY_GAMMA 0								// Set to 0 if should not be preapplied, usually a bad idea
 
