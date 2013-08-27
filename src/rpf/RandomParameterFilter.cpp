@@ -115,6 +115,9 @@ void RandomParameterFilter::Apply() {
 			//Todo: use D_a_c?
 			const float D_a_c = D_r_c + D_p_c + D_f_c;
 			fltImg(s.x, s.y) = Color(D_r_c*rcp(D_a_c));
+			if (pixel_nr % (20*w) == 0) {
+				reporter.Update(20*w);
+			}
 		}
 		WriteImage("lens_dependancy_color"+ std::to_string(iterStep) + ".exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
 								 w, h, 0, 0);
