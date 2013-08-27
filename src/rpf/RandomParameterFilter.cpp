@@ -30,13 +30,13 @@
 //debugging stuff
 #define DEBUG false
 //define here the pixel you're interested in!
-#define DEBUG_PIXEL_NR 173+100*w
-//910344/spp
+#define DEBUG_PIXEL_NR 185+330*w
+//910344/sppvn
 //200 + 200*w
 #define DUMP_INTERMEDIATE_RESULTS true
 
 //some parameters that should stay true for most cases
-#define CROP_BOX true                 				  	// jlehtinen => true, sen => false?
+#define CROP_BOX false                 				  	// jlehtinen => true, sen => false?
 #define HDR_CLAMP true									// both true
 // For some scenes this is very problematic, because spikes are not properly removed if activated...
 // But it does also darken these scenes very heavily!
@@ -89,9 +89,9 @@ void RandomParameterFilter::Apply() {
 				fltImg(s.x, s.y) += Color(1);
 			}
 			reporter.Done();
-			string fn = "neighbourhood_" + to_string(DEBUG_PIXEL_NR) + "_" + to_string(iterStep) + ".exr";
-			WriteImage(fn, (float*)fltImg.GetRawPtr(), NULL, w, h, w, h, 0, 0);
 		}
+		string fn = "neighbourhood_no_crop" + to_string(DEBUG_PIXEL_NR) + "_" + to_string(iterStep + 1) + ".exr";
+		WriteImage(fn, (float*)fltImg.GetRawPtr(), NULL, w, h, w, h, 0, 0);
 	}
 	gettimeofday(&endTime, NULL);
 	int duration(endTime.tv_sec - startTime.tv_sec);
