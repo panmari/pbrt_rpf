@@ -10,7 +10,7 @@ Film "rpfimage"
      "string randomparams" ["frd"]
 
 Sampler "random" "integer pixelsamples" [16]
-SurfaceIntegrator "path" "integer maxdepth" [1]
+SurfaceIntegrator "path" #"integer maxdepth" [5]
 Renderer "samplerrenderer"
 
 WorldBegin

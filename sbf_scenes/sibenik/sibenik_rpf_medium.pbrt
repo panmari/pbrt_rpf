@@ -11,7 +11,7 @@ Film "rpfimage"
 
 #Sampler "lowdiscrepancy" "integer pixelsamples" [8]
 Sampler "random" "integer pixelsamples" [8]
-SurfaceIntegrator "path" "integer maxdepth" [2]
+SurfaceIntegrator "path" #"integer maxdepth" [2]
 
 Renderer "samplerrenderer"
 # See sbf.cpp for the usage of built-in filters
