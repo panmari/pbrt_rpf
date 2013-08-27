@@ -7,11 +7,11 @@ Film "rpfimage"
      "integer yresolution"  [800]
      "string filename"  ["teapot_metal.exr"]
      "bool dumpfeaturebuffer" ["false"]
-     "float jouni" [0.02]
+     "float jouni" [0.2]
      "string randomparams" ["frd"]
 
 Sampler "random" "integer pixelsamples" [8]
-SurfaceIntegrator "path" "integer maxdepth" [1]
+SurfaceIntegrator "path" #"integer maxdepth" [1]
 Renderer "samplerrenderer"
 
 WorldBegin
