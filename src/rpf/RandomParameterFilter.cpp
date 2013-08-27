@@ -92,9 +92,9 @@ void RandomParameterFilter::Apply() {
 				float m_D_r_cl = 0.f;
 				float m_D_p_cl = 0.f;
 				float m_D_f_cl = 0.f;
-				for(int k=0; k < RANDOM_PARAMS_SIZE; k++) {
+				for(int k=0; k < randomParamsSize; k++) {
 					m_D_r_cl += mi.mutualinfo(neighbourhood,
-							l + COLOR_OFFSET, k + RANDOM_PARAMS_OFFSET);
+							l + COLOR_OFFSET, k + randomParamsOffset);
 				}
 				for(int k=0; k < IMG_POS_SIZE; k++) {
 					m_D_p_cl += mi.mutualinfo(neighbourhood,
