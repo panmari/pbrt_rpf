@@ -41,7 +41,7 @@
 // SBFImageFilm Method Definitions
 RPFImageFilm::RPFImageFilm(int xres, int yres, Filter *filt, const float crop[4],
                      const string &fn, const bool dp,
-                     const float jouni, string qual)
+                     const float jouni, const string qual, const string randomParams)
     : Film(xres, yres) {
 	filter = filt;
     memcpy(cropWindow, crop, 4 * sizeof(float));
@@ -53,7 +53,7 @@ RPFImageFilm::RPFImageFilm(int xres, int yres, Filter *filt, const float crop[4]
     yPixelCount = max(1, Ceil2Int(yResolution * cropWindow[3]) - yPixelStart);
 
     dump = dp;
-    rpf = new RPF(xPixelStart, yPixelStart, xPixelCount, yPixelCount, jouni, qual);
+    rpf = new RPF(xPixelStart, yPixelStart, xPixelCount, yPixelCount, jouni, qual, randomParams);
 }
 
 
@@ -125,8 +125,8 @@ RPFImageFilm *CreateRPFImageFilm(const ParamSet &params, Filter *filt) {
 
     float jouni = params.FindOneFloat("jouni", 0.02f);
     string qual = params.FindOneString("quality", "medium");
-
+    string randomParams = params.FindOneString("randomparams", "all");
     return new RPFImageFilm(xres, yres, filt, crop, filename,
-                            debug, jouni, qual);
+                            debug, jouni, qual, randomParams);
 }
 
