@@ -48,7 +48,7 @@ class RPFImageFilm : public Film {
 public:
     RPFImageFilm(int xres, int yres, Filter *filt, const float crop[4],
               const string &filename, const bool dp,
-              const float jouni, const string qual);
+              const float jouni, const string qual, const string randomParams);
     void AddSample(const CameraSample &sample, const Spectrum &L,
             const Intersection &isect);
     void Splat(const CameraSample &sample, const Spectrum &L);

@@ -41,7 +41,8 @@
 #include "filter_utils/fmath.hpp"
 
 RPF::RPF(int xs, int ys, int w, int h,
-          float _jouni, string _qual) : jouni(_jouni), quality(_qual) {
+          float _jouni, string _qual, string _randomParams) :
+          jouni(_jouni), quality(_qual), randomParams(_randomParams) {
     xPixelStart = xs;
     yPixelStart = ys;
     xPixelCount = w;
@@ -124,6 +125,7 @@ void RPF::WriteImage(const string &filename, int xres, int yres, bool dump) {
 
 	RandomParameterFilter rpf(xPixelCount, yPixelCount, spp, jouni, allSamples);
 	rpf.setQuality(quality);
+    rpf.setRandomParams(randomParams);
 	rpf.Apply();
 
     AssembleImages(dump);

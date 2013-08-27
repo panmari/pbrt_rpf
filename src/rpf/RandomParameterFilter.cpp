@@ -38,12 +38,10 @@
 #define CROP_BOX true                 				  	// jlehtinen => true, sen => false?
 #define HDR_CLAMP true									// both true
 // For some scenes this is very problematic, because spikes are not properly removed if activated...
-// But does also make tone mapping necessary!
-#define REINSERT_ENERGY_HDR_CLAMP false					// jlehtinen => true, sen => false
+// But it does also darken these scenes very heavily!
+#define REINSERT_ENERGY_HDR_CLAMP true					// jlehtinen => true, sen => false
 #define PER_CHANNEL_ALPHA false							// jlehtinen => false, sen => true
 #define PREAPPLY_GAMMA 0								// Set to 0 if should not be preapplied, usually a bad idea
-// You'll most likely want to change this:
-#define RANDOM_PARAMS_SIZE 2 // TODO: make this a user-defined parameter.
 
 #include "RandomParameterFilter.h"
 
@@ -126,6 +124,23 @@ void RandomParameterFilter::Apply() {
 	printf("The whole rendering process took %d minutes and %d seconds \n", duration/60, duration%60);
 }
 
+void RandomParameterFilter::dumpIntermediateResults(int iterStep) {
+	TwoDArray<Color> fltImg = TwoDArray<Color>(w, h);
+	for (uint i=0; i < allSamples.size(); i+=spp) {
+		Color c;
+		for (int j=0; j<spp; j++)
+			for(int k=0; k<3;k++){
+				//TODO: if jkl_dump is used, this should also be multiplied with rho
+				c[k] += allSamples[i+j].outputColors[k]; //*allSamples[i+j].rho[k];
+			}
+		c /= spp;
+		fltImg(allSamples[i].x, allSamples[i].y) = c;
+	}
+	// passing null as alpha makes it 1.f for pixel
+	WriteImage("pass" + to_string(iterStep+1) + ".exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
+					 w, h, 0, 0);
+}
+
 /**
  * Or something like this... probably I'd have to overwrite all features of pixelMean
  */
@@ -199,7 +214,6 @@ void RandomParameterFilter::preprocessSamples() {
 	printf("Done! \n");
 }
 
-
 vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 		const int boxsize, const int maxSamples, const int pixelIdx) {
 	vector<SampleData> neighbourhood;
@@ -253,7 +267,6 @@ vector<SampleData> RandomParameterFilter::determineNeighbourhood(
 	// Normalization of neighbourhood
 	SampleData nMean, nMeanSquare, nStd;
 	nMean.reset(); nMeanSquare.reset();
-	//TODO: swap loops, see if faster
 	for (int f = 0; f < LAST_NORMALIZED_OFFSET; f++) {
 		for (SampleData& s: neighbourhood) {
 			nMean[f] += s[f];
@@ -286,9 +299,9 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 		float m_D_r_cl = 0.f;
 		float m_D_p_cl = 0.f;
 		float m_D_f_cl = 0.f;
-		for(int k=0; k < RANDOM_PARAMS_SIZE; k++) {
+		for(int k=0; k < randomParamsSize; k++) {
 			m_D_r_cl += mi.mutualinfo(neighbourhood,
-					l + COLOR_OFFSET, k + RANDOM_PARAMS_OFFSET);
+					l + COLOR_OFFSET, k + randomParamsOffset);
 		}
 		for(int k=0; k < IMG_POS_SIZE; k++) {
 			m_D_p_cl += mi.mutualinfo(neighbourhood,
@@ -320,14 +333,13 @@ void RandomParameterFilter::computeWeights(vector<float> &alpha, vector<float> &
 		std::fill(alpha.begin(), alpha.end(), max(1 - (1 + 0.1f*iterStep)*W_r_c, 0.f));
 	}
 
-
 	const float D_a_c = D_r_c + D_p_c + D_f_c;
 
 	for(int k = 0; k < FEATURES_SIZE; k++) {
 		float m_D_fk_r = 0.f, m_D_fk_p = 0.f;
-		for(int l = 0; l < RANDOM_PARAMS_SIZE; l++) {
+		for(int l = 0; l < randomParamsSize; l++) {
 			m_D_fk_r += mi.mutualinfo(neighbourhood,
-					l + RANDOM_PARAMS_OFFSET, k + FEATURES_OFFSET);
+					l + randomParamsOffset, k + FEATURES_OFFSET);
 		}
 		for(int l=0; l < IMG_POS_SIZE; l++) {
 			m_D_fk_p += mi.mutualinfo(neighbourhood,
@@ -495,4 +507,29 @@ void RandomParameterFilter::setQuality(string quality_string){
 		else
 			MAX_SAMPLES[i] *= MAX_SAMPLES_FACTOR_HIGH[i];
 	}
+}
+void RandomParameterFilter::setRandomParams(string randomParamsString) {
+	if (randomParamsString == "frd") {
+		randomParamsOffset = 20;
+		randomParamsSize = 3;
+	} else if (randomParamsString == "lens") {
+		randomParamsOffset = 23;
+		randomParamsSize = 2;
+	} else if (randomParamsString == "time") {
+		randomParamsOffset = 25;
+		randomParamsSize = 1;
+	} else if (std::string::npos != randomParamsString.find("frd") &&
+			std::string::npos != randomParamsString.find("lens")) {
+		randomParamsOffset = 20;
+		randomParamsSize = 5;
+	} else if (std::string::npos != randomParamsString.find("lens") &&
+			std::string::npos != randomParamsString.find("time")) {
+		randomParamsOffset = 23;
+		randomParamsSize = 3;
+	} else {
+		randomParamsOffset = 20;
+		randomParamsSize = 6;
+	}
+	printf("Using features from %d until %d as random parameters \n",
+			randomParamsOffset, randomParamsOffset + randomParamsSize);
 }

@@ -7,10 +7,11 @@ Film "rpfimage"
     "string filename"        ["sibenik_rpf.exr"]
     "bool dumpfeaturebuffer" ["true"]
     "float jouni"            [0.02]
+    "string randomparams"    ["lens"]
 
 #Sampler "lowdiscrepancy" "integer pixelsamples" [8]
 Sampler "random" "integer pixelsamples" [8]
-SurfaceIntegrator "path" "integer maxdepth" [2]
+SurfaceIntegrator "path" #"integer maxdepth" [2]
 
 Renderer "samplerrenderer"
 # See sbf.cpp for the usage of built-in filters

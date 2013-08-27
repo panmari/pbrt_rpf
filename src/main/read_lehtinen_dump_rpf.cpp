@@ -176,6 +176,7 @@ int main(int argc, char** argv)
 
     RandomParameterFilter rpf(w, h, spp, 0.02f, allSamples);
     rpf.setQuality(quality);
+    rpf.setRandomParams("all"); //TODO make argument for this
     rpf.Apply();
 
     TwoDArray<Color> fltImg = TwoDArray<Color>(w, h);

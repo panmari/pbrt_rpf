@@ -58,10 +58,9 @@ public:
     void Apply();
 
     void setQuality(const string quality);
-
+    void setRandomParams(string randomParamsString);
 private:
-    int h, w, spp;
-
+    int h, w, spp, randomParamsOffset, randomParamsSize;
 	FILE *debugLog;
 	vector<SampleData> &allSamples;
 	const float jouni;
