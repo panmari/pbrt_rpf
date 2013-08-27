@@ -29,6 +29,7 @@
  */
 //debugging stuff
 #define DEBUG false
+//define here the pixel you're interested in!
 #define DEBUG_PIXEL_NR 173+100*w
 //910344/spp
 //200 + 200*w
@@ -78,49 +79,19 @@ void RandomParameterFilter::Apply() {
 	timeval startTime, endTime;
 	gettimeofday(&startTime, NULL);
 	preprocessSamples();
-	TwoDArray<Color> fltImg = TwoDArray<Color>(w, h);
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + std::to_string(iterStep + 1) + " of 4");
+		TwoDArray<Color> fltImg = TwoDArray<Color>(w, h);
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
-		for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
-			float D_r_c = 0.f, D_p_c = 0.f, D_f_c = 0.f;
+		for (int pixel_nr = DEBUG_PIXEL_NR; pixel_nr <= DEBUG_PIXEL_NR; pixel_nr++) {
 			vector<SampleData> neighbourhood = determineNeighbourhood(BOX_SIZE[iterStep], MAX_SAMPLES[iterStep], pixel_nr*spp);
-			MutualInformation mi;
-			vector<float> m_D_fk_c = vector<float>(FEATURES_SIZE);
-			std::fill(m_D_fk_c.begin(), m_D_fk_c.end(), 0.f);
-			for(int l=0; l < COLOR_SIZE; l++) {
-				float m_D_r_cl = 0.f;
-				float m_D_p_cl = 0.f;
-				float m_D_f_cl = 0.f;
-				for(int k=0; k < randomParamsSize; k++) {
-					m_D_r_cl += mi.mutualinfo(neighbourhood,
-							l + COLOR_OFFSET, k + randomParamsOffset);
-				}
-				for(int k=0; k < IMG_POS_SIZE; k++) {
-					m_D_p_cl += mi.mutualinfo(neighbourhood,
-							l + COLOR_OFFSET, k + IMG_POS_OFFSET);
-				}
-				for(int k=0; k < FEATURES_SIZE; k++) {
-					// needs to be saved per feature and per color
-					const float m_D_fk_cl = mi.mutualinfo(neighbourhood,
-							l + COLOR_OFFSET, k + FEATURES_OFFSET);
-					m_D_fk_c[k] += m_D_fk_cl;
-					m_D_f_cl += m_D_fk_cl;
-				}
-				D_r_c += m_D_r_cl;
-				D_p_c += m_D_p_cl;
-				D_f_c += m_D_f_cl;
+			for (SampleData &s: neighbourhood) {
+				fltImg(s.x, s.y) += Color(1);
 			}
-			SampleData &s = allSamples[pixel_nr*spp];
-			//Todo: use D_a_c?
-			const float D_a_c = D_r_c + D_p_c + D_f_c;
-			fltImg(s.x, s.y) = Color(D_r_c*rcp(D_a_c));
-			if (pixel_nr % (20*w) == 0) {
-				reporter.Update(20*w);
-			}
+			reporter.Done();
+			string fn = "neighbourhood_" + to_string(DEBUG_PIXEL_NR) + "_" + to_string(iterStep) + ".exr";
+			WriteImage(fn, (float*)fltImg.GetRawPtr(), NULL, w, h, w, h, 0, 0);
 		}
-		WriteImage("lens_dependancy_color"+ std::to_string(iterStep) + ".exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
-								 w, h, 0, 0);
 	}
 	gettimeofday(&endTime, NULL);
 	int duration(endTime.tv_sec - startTime.tv_sec);
