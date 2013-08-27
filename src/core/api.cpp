@@ -113,6 +113,10 @@
 #include "shapes/paraboloid.h"
 #include "shapes/sphere.h"
 #include "shapes/trianglemesh.h"
+
+#include "shapes/wavefront.h" // Added by Lei Xiao
+#include "textures/divide.h" // Added by Lei Xiao
+
 #include "textures/bilerp.h"
 #include "textures/checkerboard.h"
 #include "textures/constant.h"
@@ -327,6 +331,10 @@ Reference<Shape> MakeShape(const string &name,
         s = CreateSphereShape(object2world, world2object,
                               reverseOrientation, paramSet);
     // Create remaining _Shape_ types
+    else if(name == "wavefront")
+		s = CreateWaveFrontShape(object2world, world2object, reverseOrientation,
+	                         	paramSet);
+
     else if (name == "cylinder")
         s = CreateCylinderShape(object2world, world2object, reverseOrientation,
                                 paramSet);
@@ -420,6 +428,10 @@ Reference<Texture<float> > MakeFloatTexture(const string &name,
     Texture<float> *tex = NULL;
     if (name == "constant")
         tex = CreateConstantFloatTexture(tex2world, tp);
+
+	else if (name == "divide")
+		tex = CreateDivideFloatTexture(tex2world, tp); // Written by Lei Xiao
+
     else if (name == "scale")
         tex = CreateScaleFloatTexture(tex2world, tp);
     else if (name == "mix")
