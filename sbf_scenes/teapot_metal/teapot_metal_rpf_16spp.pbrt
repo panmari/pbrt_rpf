@@ -5,12 +5,11 @@ Camera "perspective" "float fov" [40]
 Film "rpfimage" 
      "integer xresolution"  [800]
      "integer yresolution"  [800]
-     "string filename"  ["teapot_metal.exr"]
+     "string filename"  ["teapot_metal_16spp.exr"]
      "bool dumpfeaturebuffer" ["false"]
-     "float jouni" [0.02]
      "string randomparams" ["frd"]
 
-Sampler "random" "integer pixelsamples" [8]
+Sampler "random" "integer pixelsamples" [16]
 SurfaceIntegrator "path" "integer maxdepth" [1]
 Renderer "samplerrenderer"
 

@@ -6,7 +6,8 @@ Film "rpfimage"
     "integer xresolution"    [500] "integer yresolution" [500]
     "string filename"        ["sibenik_rpf.exr"]
     "bool dumpfeaturebuffer" ["true"]
-    "float jouni"	     [0.02]
+    "float jouni"            [0.02]
+    "string randomparams"    ["lens"]
 
 #Sampler "lowdiscrepancy" "integer pixelsamples" [8]
 Sampler "random" "integer pixelsamples" [8]
