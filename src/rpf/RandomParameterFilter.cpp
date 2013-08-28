@@ -30,7 +30,7 @@
 //debugging stuff
 #define DEBUG false
 //define here the pixel you're interested in!
-#define DEBUG_PIXEL_NR 185+330*w
+#define DEBUG_PIXEL_NR 187+330*w
 //910344/sppvn
 //200 + 200*w
 #define DUMP_INTERMEDIATE_RESULTS true
