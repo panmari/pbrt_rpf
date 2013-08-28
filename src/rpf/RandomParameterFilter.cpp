@@ -78,9 +78,17 @@ void RandomParameterFilter::Apply() {
 	timeval startTime, endTime;
 	gettimeofday(&startTime, NULL);
 	preprocessSamples();
-	TwoDArray<Color> fltImg = TwoDArray<Color>(w, h);
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + std::to_string(iterStep + 1) + " of 4");
+		TwoDArray<Color> D_r_cImg = TwoDArray<Color>(w, h);
+		TwoDArray<Color> D_p_cImg = TwoDArray<Color>(w, h);
+		TwoDArray<Color> D_f_cImg = TwoDArray<Color>(w, h);
+		TwoDArray<Color> D_norm_cImg = TwoDArray<Color>(w, h);
+		TwoDArray<Color> D_alb_cImg = TwoDArray<Color>(w, h);
+		TwoDArray<Color> D_secNorm_cImg = TwoDArray<Color>(w, h);
+		TwoDArray<Color> D_secOrig_cImg = TwoDArray<Color>(w, h);
+		TwoDArray<Color> D_thirdOrig_cImg = TwoDArray<Color>(w, h);
+
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
 		for (int pixel_nr = 0; pixel_nr < w * h; pixel_nr++) {
 			float D_r_c = 0.f, D_p_c = 0.f, D_f_c = 0.f;
@@ -112,15 +120,37 @@ void RandomParameterFilter::Apply() {
 				D_f_c += m_D_f_cl;
 			}
 			SampleData &s = allSamples[pixel_nr*spp];
-			//Todo: use D_a_c?
 			const float D_a_c = D_r_c + D_p_c + D_f_c;
-			fltImg(s.x, s.y) = Color(D_r_c*rcp(D_a_c));
+			D_r_cImg(s.x, s.y) = Color(D_r_c*rcp(D_a_c));
+			D_p_cImg(s.x, s.y) = Color(D_p_c*rcp(D_a_c));
+			D_f_cImg(s.x, s.y) = Color(D_f_c*rcp(D_a_c));
+			D_secOrig_cImg(s.x, s.y) = Color((m_D_fk_c[0] + m_D_fk_c[1] + m_D_fk_c[2])*rcp(D_a_c));
+			D_thirdOrig_cImg(s.x, s.y) = Color((m_D_fk_c[3] + m_D_fk_c[4] + m_D_fk_c[5])*rcp(D_a_c));
+			D_norm_cImg(s.x, s.y) = Color((m_D_fk_c[6] + m_D_fk_c[7] + m_D_fk_c[8])*rcp(D_a_c));
+			D_secNorm_cImg(s.x, s.y) = Color((m_D_fk_c[9] + m_D_fk_c[10] + m_D_fk_c[11])*rcp(D_a_c));
+			D_alb_cImg(s.x, s.y) = Color((m_D_fk_c[12] + m_D_fk_c[13] + m_D_fk_c[14])*rcp(D_a_c));
 			if (pixel_nr % (20*w) == 0) {
 				reporter.Update(20*w);
 			}
 		}
-		WriteImage("lens_dependancy_color"+ std::to_string(iterStep) + ".exr", (float*)fltImg.GetRawPtr(), NULL, w, h,
+		reporter.Done();
+		WriteImage("D_r_c"+ std::to_string(iterStep) + ".exr", (float*)D_r_cImg.GetRawPtr(), NULL, w, h,
 								 w, h, 0, 0);
+		WriteImage("D_p_c"+ std::to_string(iterStep) + ".exr", (float*)D_p_cImg.GetRawPtr(), NULL, w, h,
+								 w, h, 0, 0);
+		WriteImage("D_f_c"+ std::to_string(iterStep) + ".exr", (float*)D_f_cImg.GetRawPtr(), NULL, w, h,
+										 w, h, 0, 0);
+		WriteImage("D_secOrig_c"+ std::to_string(iterStep) + ".exr", (float*)D_secOrig_cImg.GetRawPtr(), NULL, w, h,
+										 w, h, 0, 0);
+		WriteImage("D_thirdOrig_c"+ std::to_string(iterStep) + ".exr", (float*)D_thirdOrig_cImg.GetRawPtr(), NULL, w, h,
+												 w, h, 0, 0);
+		WriteImage("D_norm_c"+ std::to_string(iterStep) + ".exr", (float*)D_norm_cImg.GetRawPtr(), NULL, w, h,
+												 w, h, 0, 0);
+		WriteImage("D_secNorm_c"+ std::to_string(iterStep) + ".exr", (float*)D_secNorm_cImg.GetRawPtr(), NULL, w, h,
+												 w, h, 0, 0);
+		WriteImage("D_alb_c"+ std::to_string(iterStep) + ".exr", (float*)D_alb_cImg.GetRawPtr(), NULL, w, h,
+												 w, h, 0, 0);
+
 	}
 	gettimeofday(&endTime, NULL);
 	int duration(endTime.tv_sec - startTime.tv_sec);
