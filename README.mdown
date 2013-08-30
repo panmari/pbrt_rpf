@@ -22,8 +22,7 @@ This can be changed in `rpf/SampleData.h`.
 
 ### Considered random parameters
 
-Most likely you want to change this scene dependant. Change the parameter `RANDOM_PARAMETERS_SIZE` in `rpf/RandomParameterFilter.cpp` for this.
-TODO: make this a configurable parameter.
+Most likely you want to change this scene dependant. Can be configured in the scene file. Available are:
 
 * first reflection direction
 * lens position
