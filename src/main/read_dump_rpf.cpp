@@ -15,13 +15,18 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-    if (argc == 1)
+    if (argc == 1) {
         Severe("No base name provided!");
+    }
     string filename(argv[1]);
     string quality;
-    if (argc == 3)
+    string random_params;
+    if (argc >= 3)
     	quality = string(argv[2]);
     else quality = "medium";
+    if (argc >= 4)
+    	random_params = string(argv[3]);
+    else random_params = "all";
 
     vector<SampleData> allSamples;
     int w, h, spp;
@@ -36,7 +41,7 @@ int main(int argc, char** argv)
 
     RandomParameterFilter rpf(w, h, spp, 0.02f, allSamples);
     rpf.setQuality(quality);
-    rpf.setRandomParams("all"); //TODO make argument for this
+    rpf.setRandomParams(random_params); //TODO make argument for this
     rpf.Apply();
 
     TwoDArray<Color> fltImg = TwoDArray<Color>(w, h);
