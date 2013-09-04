@@ -16,16 +16,21 @@ using namespace std;
 int main(int argc, char** argv)
 {
     if (argc == 1) {
-        Severe("No base name provided!");
+        Severe("No base name provided!, \n \\
+        		Usage: read_dump_rpf [file.bin] [quality] [jouni] [random_params]");
     }
     string filename(argv[1]);
     string quality;
     string random_params;
+    float jouni;
     if (argc >= 3)
     	quality = string(argv[2]);
     else quality = "medium";
     if (argc >= 4)
-    	random_params = string(argv[3]);
+    	jouni = std::stof(string(argv[3]));
+    else jouni = 0.02f;
+    if (argc >= 5)
+    	random_params = string(argv[4]);
     else random_params = "all";
 
     vector<SampleData> allSamples;
@@ -39,7 +44,7 @@ int main(int argc, char** argv)
 	dump.read((char*)&(allSamples[0]), allSamples.size() * sizeof(SampleData));
 	dump.close();
 
-    RandomParameterFilter rpf(w, h, spp, 0.02f, allSamples);
+    RandomParameterFilter rpf(w, h, spp, jouni, allSamples);
     rpf.setQuality(quality);
     rpf.setRandomParams(random_params); //TODO make argument for this
     rpf.Apply();
