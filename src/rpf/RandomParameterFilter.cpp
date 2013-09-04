@@ -80,6 +80,9 @@ void RandomParameterFilter::Apply() {
 	preprocessSamples();
 	for (int iterStep = 0; iterStep < 4; iterStep++) {
 		ProgressReporter reporter(w*h, "Applying RPF filter, pass " + std::to_string(iterStep + 1) + " of 4");
+		TwoDArray<Color> alphaImg = TwoDArray<Color>(w, h);
+		TwoDArray<Color> betaImg = TwoDArray<Color>(w, h);
+
 		TwoDArray<Color> D_r_cImg = TwoDArray<Color>(w, h);
 		TwoDArray<Color> D_p_cImg = TwoDArray<Color>(w, h);
 		TwoDArray<Color> D_f_cImg = TwoDArray<Color>(w, h);
@@ -95,6 +98,8 @@ void RandomParameterFilter::Apply() {
 			vector<SampleData> neighbourhood = determineNeighbourhood(BOX_SIZE[iterStep], MAX_SAMPLES[iterStep], pixel_nr*spp);
 			MutualInformation mi;
 			vector<float> m_D_fk_c = vector<float>(FEATURES_SIZE);
+			vector<float> alpha = vector<float>(COLOR_SIZE);
+			vector<float> beta = vector<float>(FEATURES_SIZE);
 			std::fill(m_D_fk_c.begin(), m_D_fk_c.end(), 0.f);
 			for(int l=0; l < COLOR_SIZE; l++) {
 				float m_D_r_cl = 0.f;
@@ -118,9 +123,31 @@ void RandomParameterFilter::Apply() {
 				D_r_c += m_D_r_cl;
 				D_p_c += m_D_p_cl;
 				D_f_c += m_D_f_cl;
+
 			}
+			const float W_r_c = D_r_c*rcp(D_r_c + D_p_c);
+			std::fill(alpha.begin(), alpha.end(), max(1 - (1 + 0.1f*iterStep)*W_r_c, 0.f));
+
 			SampleData &s = allSamples[pixel_nr*spp];
 			const float D_a_c = D_r_c + D_p_c + D_f_c;
+
+			for(int k = 0; k < FEATURES_SIZE; k++) {
+				float m_D_fk_r = 0.f, m_D_fk_p = 0.f;
+				for(int l = 0; l < randomParamsSize; l++) {
+					m_D_fk_r += mi.mutualinfo(neighbourhood,
+							l + randomParamsOffset, k + FEATURES_OFFSET);
+				}
+				for(int l=0; l < IMG_POS_SIZE; l++) {
+					m_D_fk_p += mi.mutualinfo(neighbourhood,
+							l + IMG_POS_OFFSET, k + FEATURES_OFFSET);
+				}
+				const float W_fk_r = m_D_fk_r * rcp(m_D_fk_r + m_D_fk_p);
+				const float W_fk_c = m_D_fk_c[k] * rcp(D_a_c);
+				beta[k] = W_fk_c * max(1-(1+0.1f*iterStep)*W_fk_r, 0.f);
+			}
+
+			alphaImg(s.x, s.y) = Color(alpha[0]);
+			betaImg(s.x, s.y) = Color(beta[0]); //TODO: do this smarter
 			D_r_cImg(s.x, s.y) = Color(D_r_c*rcp(D_a_c));
 			D_p_cImg(s.x, s.y) = Color(D_p_c*rcp(D_a_c));
 			D_f_cImg(s.x, s.y) = Color(D_f_c*rcp(D_a_c));
@@ -134,6 +161,10 @@ void RandomParameterFilter::Apply() {
 			}
 		}
 		reporter.Done();
+		WriteImage("alpha"+ std::to_string(iterStep) + ".exr", (float*)alphaImg.GetRawPtr(), NULL, w, h,
+										 w, h, 0, 0);
+		WriteImage("beta"+ std::to_string(iterStep) + ".exr", (float*)betaImg.GetRawPtr(), NULL, w, h,
+										 w, h, 0, 0);
 		WriteImage("D_r_c"+ std::to_string(iterStep) + ".exr", (float*)D_r_cImg.GetRawPtr(), NULL, w, h,
 								 w, h, 0, 0);
 		WriteImage("D_p_c"+ std::to_string(iterStep) + ".exr", (float*)D_p_cImg.GetRawPtr(), NULL, w, h,
