@@ -200,6 +200,7 @@ void RPF::AssembleImages(bool dump) {
 		secOrigImg(x, y) += secOriginC;
 		thirdOrigImg(x, y) += thirdOriginC;
 		lensImg(x, y) += lensC;
+		timeImg(x, y) += sd.time;
 	}
 
     for (int y=0; y < yPixelCount; y++) {
@@ -212,6 +213,7 @@ void RPF::AssembleImages(bool dump) {
 			secOrigImg(x, y) /= spp;
 			thirdOrigImg(x, y) /= spp;
 			lensImg(x, y) /= spp;
+			timeImg(x, y) /= spp;
     	}
     }
 
