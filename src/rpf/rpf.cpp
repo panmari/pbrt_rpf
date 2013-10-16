@@ -160,7 +160,7 @@ void RPF::WriteImage(const string &filename, int xres, int yres, bool dump) {
 
 void RPF::WriteImage(const string &filename, const TwoDArray<Color> &image, int xres, int yres) const {
     ::WriteImage(filename, (float*)image.GetRawPtr(), NULL, xPixelCount, yPixelCount,
-                 xres, yres, xPixelStart, yPixelStart);
+                 xres, yres, 0, 0);
 }
 
 TwoDArray<Color> RPF::FloatImageToColor(const TwoDArray<float> &image) const {
