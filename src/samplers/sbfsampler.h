@@ -44,8 +44,10 @@
 class SBFSampler : public Sampler {
 public:
     SBFSampler(int xstart, int xend, int ystart,
-        int yend, int ns, float sopen, float sclose,
-        int is, int ms, vector<vector<int> > *pixsmp=NULL,
+        int yend, float as, float sopen, float sclose,
+        int is, int ms, int it, 
+        vector<vector<int> > *pixoff=NULL,
+        vector<vector<int> > *pixsmp=NULL,
         int bxs=-1, int bys=-1);
     virtual ~SBFSampler() {
         if(sampleBuf) delete[] sampleBuf;
@@ -53,19 +55,31 @@ public:
     int MaximumSampleCount() { return maxSamples; }
     int GetMoreSamples(Sample *sample, RNG &rng);
     int RoundSize(int sz) const { 
-        return RoundUpPow2(sz); 
+        return sz; 
     }
     Sampler *GetSubSampler(int num, int count);
+    float GetAdaptiveSPP() const {
+        return adaptiveSamples;
+    }
+    int GetIteration() const {
+        return iteration;
+    }
+    void SetPixelOffset(vector<vector<int> > *po) {
+        pixelOffset = po;
+    }
     void SetPixelSampleCount(vector<vector<int> > *ps) {
         pixelSampleCount = ps;
     }
 private:
 
     // SBFSampler Private Data              
+    vector<vector<int> > *pixelOffset;
     vector<vector<int> > *pixelSampleCount;     
     float *sampleBuf;
     int initSamples;
+    float adaptiveSamples;
     int maxSamples;
+    int iteration;
     int xPos, yPos;
     int baseXStart, baseYStart;
 };

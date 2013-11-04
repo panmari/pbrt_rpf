@@ -63,8 +63,6 @@ private:
 };
 
 ReconstructionFilter::ReconstructionFilter(const Filter *filter) {
-    // TODO: remove code duplication
-    
     xWidth = filter->xWidth;
     yWidth = filter->yWidth;
     xKernel.resize(2*xWidth+1);

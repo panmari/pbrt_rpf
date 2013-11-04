@@ -54,20 +54,25 @@ public:
             int height
             );
 
-    void ApplyMSE(float sigmaR,
-                  const vector<TwoDArray<float> > &mseArray,
-                  const TwoDArray<Color> &rImg,
-                  const TwoDArray<Feature> &featureImg,
-                  const TwoDArray<Feature> &featureVarImg,
-                  vector<TwoDArray<float> > &outMSE) const;
+    // Filter SURE images
+    void Apply(float sigmaR,
+               const vector<TwoDArray<float> > &mseArray,
+               const vector<TwoDArray<float> > &priArray,
+               const TwoDArray<Color> &rImg,
+               const TwoDArray<Feature> &featureImg,
+               const TwoDArray<Feature> &featureVarImg,
+               vector<TwoDArray<float> > &outMSE,
+               vector<TwoDArray<float> > &outPri) const;
 
+    // Filter MC reconstructed image
     void Apply(const TwoDArray<Color> &img,
                const TwoDArray<Feature> &featureImg,
                const TwoDArray<Feature> &featureVarImg,
                const TwoDArray<Color> &rImg,
                const TwoDArray<Color> &VarImg,
                vector<TwoDArray<Color> > &fltArray,
-               vector<TwoDArray<float> > &mseArray) const;
+               vector<TwoDArray<float> > &mseArray,
+               vector<TwoDArray<float> > &priArray) const;
 
 private:
     int searchRadius, patchRadius;

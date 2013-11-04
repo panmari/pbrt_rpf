@@ -114,14 +114,20 @@ void LDPixelSample(int offset, int xPos, int yPos, float shutterOpen,
 }
 
 SBFSampler::SBFSampler(int xstart, int xend,
-        int ystart, int yend, int ns, float sopen, float sclose, 
-        int is, int ms, vector<vector<int> > *pixsmp, int bxs, int bys)
-    : Sampler(xstart, xend, ystart, yend, ns, sopen, sclose) {
+        int ystart, int yend, float as, float sopen, float sclose, 
+        int is, int ms, int it,
+        vector<vector<int> > *pixoff, 
+        vector<vector<int> > *pixsmp, 
+        int bxs, int bys)
+    : Sampler(xstart, xend, ystart, yend, Ceil2Int(is+it*as), sopen, sclose) {
     xPos = xPixelStart;
     yPos = yPixelStart;    
-    initSamples = RoundUpPow2(is);
-    maxSamples = RoundUpPow2(ms);
+    initSamples = is;
+    adaptiveSamples = as;
+    maxSamples = ms;
+    iteration = it;
     
+    pixelOffset = pixoff;
     pixelSampleCount = pixsmp;
     sampleBuf = NULL;
 
@@ -135,21 +141,24 @@ Sampler *SBFSampler::GetSubSampler(int num, int count) {
     if (x0 == x1 || y0 == y1) return NULL;
     return new SBFSampler(x0, x1, 
         y0, y1, samplesPerPixel, shutterOpen, shutterClose,
-        initSamples, maxSamples, pixelSampleCount, baseXStart, baseYStart);
+        initSamples, maxSamples, iteration, 
+        pixelOffset, pixelSampleCount, 
+        baseXStart, baseYStart);
 }
 
 int SBFSampler::GetMoreSamples(Sample *samples, RNG &rng) {   
     if (yPos == yPixelEnd) return 0;
-    int spp = pixelSampleCount ? 
-        min(RoundUpPow2((*pixelSampleCount)[yPos-baseYStart][xPos-baseXStart]), 
-                (uint32_t)maxSamples) : initSamples;    
+    
+    int spp = pixelSampleCount ?
+        min(((*pixelSampleCount)[yPos-baseYStart][xPos-baseXStart]), maxSamples) : 
+        initSamples;
     if(!sampleBuf) {
         sampleBuf = new float[LDPixelSampleFloatsNeeded(samples, maxSamples)];
     }
 
-    LDPixelSample(pixelSampleCount ? initSamples : 0, xPos, yPos, 
+    LDPixelSample(pixelOffset ? (*pixelOffset)[yPos-baseYStart][xPos-baseXStart] : 0, xPos, yPos, 
             shutterOpen, shutterClose, spp, samples, sampleBuf, rng);
-
+ 
     if (++xPos == xPixelEnd) {
         xPos = xPixelStart;
         ++yPos;
@@ -163,13 +172,14 @@ int SBFSampler::GetMoreSamples(Sample *samples, RNG &rng) {
 Sampler *CreateSBFSampler(const ParamSet &params,
                        const Film *film, const Camera *camera) {
     int is = params.FindOneInt("initsamples", 8);
-    int ns = params.FindOneInt("adaptivesamples", 24);
+    float ns = params.FindOneFloat("adaptivesamples", 24.f);
     int ms = params.FindOneInt("maxsamples", 1024);
+    int it = params.FindOneInt("adaptiveiteration", 1);
     int xstart, xend, ystart, yend;
     film->GetPixelExtent(&xstart, &xend, &ystart, &yend);
     return new SBFSampler(xstart, xend, ystart, yend, ns,
                           camera->shutterOpen, camera->shutterClose,
-                          is, ms);
+                          is, ms, it);
 }
 
 

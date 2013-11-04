@@ -84,13 +84,15 @@ CrossNLMFilter::CrossNLMFilter(
     nTasks = RoundUpPow2(nTasks);
 }
 
-void CrossNLMFilter::ApplyMSE(
+void CrossNLMFilter::Apply(
                   float sigmaR,
                   const vector<TwoDArray<float> > &mseArray,
+                  const vector<TwoDArray<float> > &priArray,
                   const TwoDArray<Color> &rImg,
                   const TwoDArray<Feature> &featureImg,
                   const TwoDArray<Feature> &featureVarImg,
-                  vector<TwoDArray<float> > &outMSE) const {
+                  vector<TwoDArray<float> > &outMSE,
+                  vector<TwoDArray<float> > &outPri) const {
     float mseScaleR = -0.5f/(sigmaR*sigmaR);
 #pragma omp parallel for num_threads(PbrtOptions.nCores) schedule(static)   
     for(int taskId = 0; taskId < nTasks; taskId++) {
@@ -99,7 +101,8 @@ void CrossNLMFilter::ApplyMSE(
                          &txs, &txe, &tys, &tye); 
         for(int y = tys; y < tye; y++) 
             for(int x = txs; x < txe; x++) { 
-                vector<float> sum(mseArray.size(), 0.f);
+                vector<float> mseSum(mseArray.size(), 0.f);
+                vector<float> priSum(priArray.size(), 0.f);
                 vector<float> wSum(mseArray.size(), 0.f);
                 Feature feature = featureImg(x, y);
                 Feature featureVar = featureVarImg(x, y);            
@@ -136,13 +139,16 @@ void CrossNLMFilter::ApplyMSE(
                         float weight = fmath::exp(dist*mseScaleR +
                                                   Sum(fDist*scaleF)); 
                         for(size_t i = 0; i < mseArray.size(); i++) {
-                            sum[i] += weight * mseArray[i](xx, yy);
+                            mseSum[i] += weight * mseArray[i](xx, yy);
+                            priSum[i] += weight * priArray[i](xx, yy);
                             wSum[i] += weight;
                         }
                     }                
 
-                for(size_t i = 0; i < mseArray.size(); i++) 
-                    outMSE[i](x, y) = sum[i] / wSum[i];
+                for(size_t i = 0; i < mseArray.size(); i++) {
+                    outMSE[i](x, y) = mseSum[i] / wSum[i];
+                    outPri[i](x, y) = priSum[i] / wSum[i];
+                }
             }            
     }   
 
@@ -154,7 +160,8 @@ void CrossNLMFilter::Apply(const TwoDArray<Color> &img,
                const TwoDArray<Color> &rImg,
                const TwoDArray<Color> &varImg,
                vector<TwoDArray<Color> > &fltArray,
-               vector<TwoDArray<float> > &mseArray) const {    
+               vector<TwoDArray<float> > &mseArray,
+               vector<TwoDArray<float> > &priArray) const {    
 #pragma omp parallel for num_threads(PbrtOptions.nCores) schedule(static)   
     for(int taskId = 0; taskId < nTasks; taskId++) {
         int txs, txe, tys, tye;
@@ -254,9 +261,11 @@ void CrossNLMFilter::Apply(const TwoDArray<Color> &img,
                         }
                     tmp *= (-2.f*scaleR[p])*invPatchSize*invWSum;
                     dxdy += tmp;
-                    Color mse = (rxl-ryl)*(rxl-ryl) + 2.f*varImg(x, y)*dxdy;
+                    Color mse = (rxl-ryl)*(rxl-ryl) + 2.f*varImg(x, y)*dxdy - varImg(x, y);
+                    Color pri = (mse + varImg(x, y));
                     fltArray[p](x, y) = xl;
                     mseArray[p](x, y) = Avg(mse);
+                    priArray[p](x, y) = Avg(pri) / (xl.Y()*xl.Y() + 1e-2f);
                 } 
             }            
     }

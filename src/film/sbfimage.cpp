@@ -98,8 +98,8 @@ void SBFImageFilm::WriteImage(float splatScale) {
     sbf->WriteImage(filename, xResolution, yResolution, dump);
 }
 
-void SBFImageFilm::GetAdaptPixels(int spp, vector<vector<int> > &pixels) {
-    sbf->GetAdaptPixels(spp, pixels);
+void SBFImageFilm::GetAdaptPixels(float avgSpp, vector<vector<int> > &pixOff, vector<vector<int> > &pixSam) {
+    sbf->GetAdaptPixels(avgSpp, pixOff, pixSam);
 }
 
 SBFImageFilm *CreateSBFImageFilm(const ParamSet &params, Filter *filter) {
@@ -166,3 +166,4 @@ SBFImageFilm *CreateSBFImageFilm(const ParamSet &params, Filter *filter) {
                             sigmaN, sigmaR, sigmaD,
                             interMseSigma, finalMseSigma);
 }
+

@@ -48,13 +48,13 @@
 #include "SBFCommon.h"
 
 class SBF {
-public:
+public:       
     enum FilterType {
         CROSS_BILATERAL_FILTER,
         CROSS_NLM_FILTER
     };
 
-    SBF(int xs, int ys, int w, int h,
+    SBF(int xs, int ys, int w, int h, 
         const Filter *filt, FilterType type,
         const vector<float> &interParams,
         const vector<float> &finalParams,
@@ -63,9 +63,9 @@ public:
     ~SBF() {
         delete pixelInfos;
     }
-    void AddSample(const CameraSample &sample, const Spectrum &L,
+    void AddSample(const CameraSample &sample, const Spectrum &L, 
             const Intersection &isect);
-    void GetAdaptPixels(int spp, vector<vector<int> > &pixels);
+    void GetAdaptPixels(float avgSpp, vector<vector<int> > &pixOff, vector<vector<int> > &pixSmp);
     void WriteImage(const string &filename, int xres, int yres, bool dump);
 
     void Update(bool final);
@@ -77,15 +77,15 @@ private:
     struct PixelInfo {
         PixelInfo() {
             for(int i = 0; i < 3; i++) {
-                Lxyz[i] = sqLxyz[i] =
-                    normal[i] = sqNormal[i] =
-                    rho[i] = sqRho[i] =
+                Lrgb[i] = sqLrgb[i] =
+                    normal[i] = sqNormal[i] = 
+                    rho[i] = sqRho[i] =  
                     depth = sqDepth = 0.f;
             }
             sampleCount = 0;
         }
-        float Lxyz[3];
-        float sqLxyz[3];
+        float Lrgb[3];
+        float sqLrgb[3];
         float normal[3];
         float sqNormal[3];
         float rho[3];
@@ -102,18 +102,18 @@ private:
     float sigmaN, sigmaR, sigmaD;
     float interMseSigma, finalMseSigma;
 
-    BlockedArray<PixelInfo> *pixelInfos;
+    BlockedArray<PixelInfo> *pixelInfos;    
     int xPixelStart, yPixelStart;
     int xPixelCount, yPixelCount;
 
-    // Storing the image, features and their variance
+    // Storing the image, features and their variance 
     // reconstructed by default filter
     TwoDArray<Color> colImg;
     TwoDArray<Color> varImg;
     TwoDArray<Feature> featureImg;
     TwoDArray<Feature> featureVarImg;
     // The adaptive sampling metric
-    TwoDArray<float> adaptImg;
+    TwoDArray<float> adaptImg; 
     // Filtered image
     TwoDArray<Color> fltImg;
 
@@ -131,3 +131,4 @@ private:
 };
 
 #endif //PBRT_SBF_H
+
