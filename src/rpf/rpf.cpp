@@ -116,7 +116,7 @@ void RPF::WriteImage(const string &filename, int xres, int yres, bool dump) {
 	std::sort(allSamples.begin(), allSamples.end());
 	reporter.Done();
 
-    string filenameBase = filename.substr(0, filename.rfind(".")) + "_jouni_" + std::to_string(jouni).substr(2,3);
+    string filenameBase = filename.substr(0, filename.rfind("."));
     string filenameExt  = filename.substr(filename.rfind("."));
 
     if (dump) {
