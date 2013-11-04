@@ -24,7 +24,7 @@ DEFS=-DPBRT_HAS_OPENEXR
 MARCH=-m64
 
 # change this to -g3 for debug builds
-OPT=-Ofast -fopenmp -std=c++0x
+OPT=-Ofast -fopenmp
 #OPT=-g3 -fopenmp -std=c++0x
 # comment out this line to enable assertions at runtime
 #DEFS += -DNDEBUG -D_GLIBCXX_DEBUG
@@ -170,7 +170,7 @@ objs/volumes_%.o: volumes/%.cpp
 	
 objs/%.o: main/%.cpp
 	@echo "Building object $@"
-	@$(CXX) $(CXXFLAGS) -o $@ -c $<
+	@$(CXX) $(CXXFLAGS) -std=c++0x -o $@ -c $<
 
 objs/tools_%.o: tools/%.cpp
 	@echo "Building object $@"
@@ -182,7 +182,7 @@ objs/sbf_%.o: sbf/%.cpp
 	
 objs/rpf_%.o: rpf/%.cpp
 	@echo "Building object $@"
-	@$(CXX) $(CXXFLAGS) -o $@ -c $<
+	@$(CXX) $(CXXFLAGS) -std=c++0x -o $@ -c $<
 
 	
 bin/pbrt: objs/main_pbrt.o objs/libpbrt.a 

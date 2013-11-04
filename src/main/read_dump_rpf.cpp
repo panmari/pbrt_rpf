@@ -16,8 +16,7 @@ using namespace std;
 int main(int argc, char** argv)
 {
     if (argc == 1) {
-        Severe("No base name provided!, \n \\
-        		Usage: read_dump_rpf [file.bin] [quality] [jouni] [random_params]");
+        Severe("No base name provided!, \n Usage: read_dump_rpf [file.bin] [quality] [jouni] [random_params]");
     }
     string filename(argv[1]);
     string quality;
