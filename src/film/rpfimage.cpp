@@ -92,7 +92,7 @@ void RPFImageFilm::GetPixelExtent(int *xstart, int *xend,
 
 
 void RPFImageFilm::WriteImage(float splatScale) {
-    rpf->WriteImage(filename, xResolution, yResolution, dump);
+    rpf->WriteImage(filename, xPixelCount, yPixelCount, dump);
 }
 
 void RPFImageFilm::GetAdaptPixels(int spp, vector<vector<int> > &pixels) {

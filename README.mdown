@@ -5,7 +5,8 @@ Sample scenes for rendering are provided in sbf_scenes. Configurable parameters 
 * **jouni:** Should be adapted if you have very noisy/unnoisy scenes (default: 0.02)
 * **quality:** How many pixels are considered when compiling neighbourhood. 
 This impacts computing time by a large amount. Available options are `high`, `medium`, defaulting to `medium`. 
-
+* **randomparams** Which random params should be considered. Available options are 
+`frd` (first reflection direction), `lens`, `time` and combinations of this (except `time` and `frd`, sorry)
 
 ## Considered data from samples
 
@@ -21,8 +22,7 @@ This can be changed in `rpf/SampleData.h`.
 
 ### Considered random parameters
 
-Most likely you want to change this scene dependant. Change the parameter `RANDOM_PARAMETERS_SIZE` in `rpf/RandomParameterFilter.cpp` for this.
-TODO: make this a configurable parameter.
+Most likely you want to change this scene dependant. Can be configured in the scene file. Available are:
 
 * first reflection direction
 * lens position

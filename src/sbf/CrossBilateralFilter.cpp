@@ -37,7 +37,7 @@
 #include "parallel.h"
 
 /**
- *  As we do not optimize feature parameters, It will be good do some local 
+ *  As we do not optimize feature parameters, It might be a good idea to do some local 
  *  normalization when using the feature buffers, as in Random Parameter 
  *  Filtering[Sen and Darabi 2012]. E.g. for the filter window of each pixel 
  *  we gather all the features in the window and calculate z-scores of them.
@@ -68,12 +68,13 @@ CrossBilateralFilter::CrossBilateralFilter(
     nTasks = RoundUpPow2(nTasks);
 }
 
-void CrossBilateralFilter::ApplyMSE(
+void CrossBilateralFilter::Apply(
                 const vector<TwoDArray<float> > &mseArray,
+                const vector<TwoDArray<float> > &priArray,
                 const TwoDArray<Feature> &featureImg,
                 const TwoDArray<Feature> &featureVarImg,
-                vector<TwoDArray<float> > &outMSE) const {
-    // Should use something like template to reduce code duplication...
+                vector<TwoDArray<float> > &outMSE,
+                vector<TwoDArray<float> > &outPri) const {
 #pragma omp parallel for num_threads(PbrtOptions.nCores) schedule(static)
     for(int taskId = 0; taskId < nTasks; taskId++) {
         int txs, txe, tys, tye;
@@ -87,7 +88,8 @@ void CrossBilateralFilter::ApplyMSE(
                 int xe = std::min(x+radius, featureImg.GetColNum()-1);
                 Feature feature = featureImg(x, y);
                 Feature featureVar = featureVarImg(x, y);            
-                vector<float> sum(mseArray.size(), 0.f);
+                vector<float> mseSum(mseArray.size(), 0.f);
+                vector<float> priSum(priArray.size(), 0.f);
                 vector<float> wSum(mseArray.size(), 0.f);
                 for(int yy = ys; yy <= ye; yy++) { 
                     int yDist = (yy-y)*(yy-y);
@@ -99,15 +101,18 @@ void CrossBilateralFilter::ApplyMSE(
                         float w = fmath::exp(sDist*scaleS +
                                 Sum(fDist*scaleF));
 
-                        for(size_t i = 0; i < sum.size(); i++) {
-                            sum[i] += w*mseArray[i](xx, yy);
+                        for(size_t i = 0; i < mseSum.size(); i++) {
+                            mseSum[i] += w*mseArray[i](xx, yy);
+                            priSum[i] += w*priArray[i](xx, yy);
                             wSum[i] += w;
                         }
                     }
                 }
 
-                for(size_t i = 0; i < sum.size(); i++)
-                    outMSE[i](x, y) = sum[i]/wSum[i];
+                for(size_t i = 0; i < mseSum.size(); i++) {
+                    outMSE[i](x, y) = mseSum[i]/wSum[i];
+                    outPri[i](x, y) = priSum[i]/wSum[i];
+                }
             }
         }
 
@@ -119,8 +124,10 @@ void CrossBilateralFilter::Apply(const TwoDArray<Color> &img,
                                  const TwoDArray<Feature> &featureVarImg,
                                  const TwoDArray<Color> &rImg,
                                  const TwoDArray<Color> &varImg,
+                                 const TwoDArray<Color> &rVarImg,
                                  TwoDArray<Color> &outImg,                                  
-                                 TwoDArray<float> &outMSE) const {
+                                 TwoDArray<float> &outMSE,
+                                 TwoDArray<float> &outPri) const {
 #pragma omp parallel for num_threads(PbrtOptions.nCores) schedule(static)
     for(int taskId = 0; taskId < nTasks; taskId++) {
         int txs, txe, tys, tye;
@@ -135,7 +142,7 @@ void CrossBilateralFilter::Apply(const TwoDArray<Color> &img,
                 Color rColor = rImg(x, y);
                 Feature feature = featureImg(x, y);
                 Feature featureVar = featureVarImg(x, y);            
-                Color sum = 0.f, rSum = 0.f, rSqSum = 0.f;
+                Color sum = 0.f, sqSum = 0.f, rSum = 0.f, rSqSum = 0.f;
                 float wSum = 0.f;
                 for(int dy = dys; dy <= dye; dy++) { 
                     int yDist = (dy-y)*(dy-y);
@@ -152,19 +159,24 @@ void CrossBilateralFilter::Apply(const TwoDArray<Color> &img,
 
                         Color r = rImg(dx, dy);
                         sum += w*img(dx, dy);
-                        rSum += w*r;
+                        sqSum += w*img(dx, dy)*img(dx, dy);
+                        rSum += w*r;                        
                         rSqSum += w*r*r;
-                        wSum += w;                
+                        wSum += w;
                     }
                 }
 
                 float invWSum = 1.f/wSum;
-                outImg(x, y) = sum*invWSum;
-                Color Y = rColor;
-                Color fY = rSum*invWSum; 
-                Color dFdY = invWSum - scaleC*(rSqSum*invWSum-fY*fY);
-                Color error = (fY-Y)*(fY-Y) + 2.f*varImg(x, y)*dFdY;
-                outMSE(x, y) = Avg(error);
+                Color fY = sum*invWSum;
+                Color rY = rColor;
+                Color rfY = rSum*invWSum; 
+                Color rdFdY = invWSum - scaleC*(rSqSum*invWSum-rfY*rfY);
+                Color rError = (rfY-rY)*(rfY-rY) + 2.f*rVarImg(x, y)*rdFdY - rVarImg(x, y);
+                Color pri = rError + rVarImg(x, y);
+
+                outImg(x, y) = fY;
+                outMSE(x, y) = Avg(rError);
+                outPri(x, y) = Avg(pri) / (fY.Y()*fY.Y() + 1e-2f);
             }
         }
 

@@ -5,13 +5,14 @@ Accelerator "bvh"
 Film "rpfimage"    
     "integer xresolution"    [1000] "integer yresolution" [1000]
     "string filename"        ["sibenik_rpf.exr"]
-    "bool dumpfeaturebuffer" ["false"]
-    "float jouni"		[0.02]
+    "bool dumpfeaturebuffer" ["true"]
+    "float jouni"	     [0.02]
+    "random_params"	     ["lens"]
 
 
 #Sampler "lowdiscrepancy" "integer pixelsamples" [8]
 Sampler "random" "integer pixelsamples" [8]
-SurfaceIntegrator "path" "integer maxdepth" [2]
+SurfaceIntegrator "path" "integer maxdepth" [1]
 
 Renderer "samplerrenderer"
 # See sbf.cpp for the usage of built-in filters
@@ -22,7 +23,7 @@ LookAt  15 2.5 4.3   -.261 -.031 1.252   0 0 1
 Camera "perspective"
     "float fov" [50.1343]
     "float focaldistance" [15]
-    "float lensradius" [.1]
+    "float lensradius" [.2]
 
 WorldBegin
 

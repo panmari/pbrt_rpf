@@ -77,7 +77,7 @@ void SBFRendererTask::Run() {
             // Find camera ray for _sample[i]_
             PBRT_STARTED_GENERATING_CAMERA_RAY(&samples[i]);
             float rayWeight = camera->GenerateRayDifferential(samples[i], &rays[i]);
-            rays[i].ScaleDifferentials(1.f / sqrtf((float)sampleCount));
+            rays[i].ScaleDifferentials(1.f / sqrtf((float)sampler->samplesPerPixel));
             PBRT_FINISHED_GENERATING_CAMERA_RAY(&samples[i], &rays[i], rayWeight);
 
             // Evaluate radiance along camera ray
@@ -221,25 +221,26 @@ void SBFRenderer::Render(const Scene *scene) {
         delete renderTasks[i];  
     reporter.Done();        
     
-    if(sampler->samplesPerPixel > 0) {
-        // One can create a loop here to have multiple iteration of adaptive sampling        
-        vector<vector<int> > pixels;
-        pixels.clear();
-        sbfFilm->GetAdaptPixels(sampler->samplesPerPixel, pixels);
-        sbfSampler->SetPixelSampleCount(&pixels);
+    if(sbfSampler->GetAdaptiveSPP() > 0.f && sbfSampler->GetIteration() > 0) {
+        for(int iter = 0; iter < sbfSampler->GetIteration(); iter++) {
+            vector<vector<int> > pixOff;
+            vector<vector<int> > pixSmp;
+            sbfFilm->GetAdaptPixels(sbfSampler->GetAdaptiveSPP(), pixOff, pixSmp);
+            sbfSampler->SetPixelOffset(&pixOff);
+            sbfSampler->SetPixelSampleCount(&pixSmp);
 
-        ProgressReporter asReporter(nTasks, "Adaptive Sampling");
-        renderTasks.clear();
-        for (int i = 0; i < nTasks; ++i)
-            renderTasks.push_back(new SBFRendererTask(scene, this, camera,
-                        asReporter, sampler, sample, 
-                        nTasks-1-i, nTasks,
-                        rngs[i], maxDepth));
-        EnqueueTasks(renderTasks);
-        WaitForAllTasks();
-        for (uint32_t i = 0; i < renderTasks.size(); ++i)
-            delete renderTasks[i];  
-        asReporter.Done();
+            ProgressReporter asReporter(nTasks, "Adaptive Sampling");
+            renderTasks.clear();
+            for (int i = 0; i < nTasks; ++i)
+                renderTasks.push_back(new SBFRendererTask(scene, this, camera,
+                            asReporter, sampler, sample, nTasks-1-i, nTasks,
+                            rngs[i], maxDepth));
+            EnqueueTasks(renderTasks);
+            WaitForAllTasks();
+            for (uint32_t i = 0; i < renderTasks.size(); ++i)
+                delete renderTasks[i];  
+            asReporter.Done();
+        }
     }
     
 

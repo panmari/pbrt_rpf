@@ -116,7 +116,7 @@ void RPF::WriteImage(const string &filename, int xres, int yres, bool dump) {
 	std::sort(allSamples.begin(), allSamples.end());
 	reporter.Done();
 
-    string filenameBase = filename.substr(0, filename.rfind(".")) + "_jouni_" + std::to_string(jouni).substr(2,3);
+    string filenameBase = filename.substr(0, filename.rfind("."));
     string filenameExt  = filename.substr(filename.rfind("."));
 
     if (dump) {
@@ -160,7 +160,7 @@ void RPF::WriteImage(const string &filename, int xres, int yres, bool dump) {
 
 void RPF::WriteImage(const string &filename, const TwoDArray<Color> &image, int xres, int yres) const {
     ::WriteImage(filename, (float*)image.GetRawPtr(), NULL, xPixelCount, yPixelCount,
-                 xres, yres, xPixelStart, yPixelStart);
+                 xres, yres, 0, 0);
 }
 
 TwoDArray<Color> RPF::FloatImageToColor(const TwoDArray<float> &image) const {
@@ -200,6 +200,7 @@ void RPF::AssembleImages(bool dump) {
 		secOrigImg(x, y) += secOriginC;
 		thirdOrigImg(x, y) += thirdOriginC;
 		lensImg(x, y) += lensC;
+		timeImg(x, y) += sd.time;
 	}
 
     for (int y=0; y < yPixelCount; y++) {
@@ -212,6 +213,7 @@ void RPF::AssembleImages(bool dump) {
 			secOrigImg(x, y) /= spp;
 			thirdOrigImg(x, y) /= spp;
 			lensImg(x, y) /= spp;
+			timeImg(x, y) /= spp;
     	}
     }
 

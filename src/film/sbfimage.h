@@ -63,7 +63,7 @@ public:
     void GetPixelExtent(int *xstart, int *xend, int *ystart, int *yend) const;
     void WriteImage(float splatScale);
     void UpdateDisplay(int x0, int y0, int x1, int y1, float splatScale) {}
-    void GetAdaptPixels(int spp, vector<vector<int> > &pixels);
+    void GetAdaptPixels(float avgSpp, vector<vector<int> > &pixOff, vector<vector<int> > &pixSmp);
     void SetSPP(int s) { /*Do nothing here */};
 private:
     // SBFImageFilm Private Data

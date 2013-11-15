@@ -90,44 +90,54 @@ void SBF::AddSample(const CameraSample &sample, const Spectrum &L,
     int x = Floor2Int(sample.imageX)-xPixelStart;
     int y = Floor2Int(sample.imageY)-yPixelStart;
     // Check if the sample is in the image
-    if (x < 0 || y < 0 || x >= xPixelCount || y >= yPixelCount)
+    if (x < 0 || y < 0 || x >= xPixelCount || y >= yPixelCount) 
         return;    
 
     // Update PixelInfo structure
     PixelInfo &pixelInfo = (*pixelInfos)(x, y);
 
     // Convert to 3d color space from Spectrum
-    float xyz[3];
-    L.ToRGB(xyz);
-    float rhoXYZ[3];
-    isect.rho.ToRGB(rhoXYZ);
+    float rgb[3];
+    L.ToRGB(rgb);
+    float rhoRGB[3];
+    isect.rho.ToRGB(rhoRGB);
 
-    // TODO: does AtomicAdd really needed?
+    // AtomicAdd necessary?
     for(int i = 0; i < 3; i++) {
-        AtomicAdd(&(pixelInfo.Lxyz[i]), xyz[i]);
-        AtomicAdd(&(pixelInfo.sqLxyz[i]), xyz[i]*xyz[i]);
-        AtomicAdd(&(pixelInfo.rho[i]), rhoXYZ[i]);
-        AtomicAdd(&(pixelInfo.sqRho[i]), rhoXYZ[i]*rhoXYZ[i]);
+        AtomicAdd(&(pixelInfo.Lrgb[i]), rgb[i]);        
+        AtomicAdd(&(pixelInfo.sqLrgb[i]), rgb[i]*rgb[i]);
+        AtomicAdd(&(pixelInfo.rho[i]), rhoRGB[i]);
+        AtomicAdd(&(pixelInfo.sqRho[i]), rhoRGB[i]*rhoRGB[i]);
         // Sometimes pbrt returns NaN normals, we simply ignore them here
         if(!isect.shadingN.HasNaNs()) {
-            AtomicAdd(&(pixelInfo.normal[i]), isect.shadingN[i]);
+            AtomicAdd(&(pixelInfo.normal[i]), isect.shadingN[i]);            
             AtomicAdd(&(pixelInfo.sqNormal[i]), isect.shadingN[i]*isect.shadingN[i]);
         }
-    }
+    }    
     AtomicAdd(&(pixelInfo.depth), isect.depth);
     AtomicAdd(&(pixelInfo.sqDepth), isect.depth*isect.depth);
     AtomicAdd((AtomicInt32*)&(pixelInfo.sampleCount), (int32_t)1);
 }
 
-void SBF::GetAdaptPixels(int spp, vector<vector<int> > &pixels) {
+void SBF::GetAdaptPixels(float avgSpp, vector<vector<int> > &pixOff, vector<vector<int> > &pixSmp) {
     Update(false);
-    
-    // We use long long here since int will overflow for very extreme case
-    // (e.g. for a very big image with size 2560x1920, unsigned int can only afford 873 spp)
-    long long totalSamples = (long long)xPixelCount*
-                             (long long)yPixelCount*
-                             (long long)spp;
 
+    // Clear pixels
+    vector<vector<int> >().swap(pixOff);
+    vector<vector<int> >().swap(pixSmp);
+
+    // Fill offsets
+    pixOff.resize(yPixelCount);
+    for(int y = 0; y < yPixelCount; y++) {
+        pixOff[y].resize(xPixelCount);
+        for(int x = 0; x < xPixelCount; x++) 
+            pixOff[y][x] = (*pixelInfos)(x, y).sampleCount;        
+    }
+    
+    long double totalSamples = (long double)xPixelCount*
+                             (long double)yPixelCount*
+                             (long double)avgSpp;
+    
     long double probSum = 0.0L;
     for(int y = 0; y < yPixelCount; y++)
         for(int x = 0; x < xPixelCount; x++) {
@@ -135,16 +145,13 @@ void SBF::GetAdaptPixels(int spp, vector<vector<int> > &pixels) {
         }
     long double invProbSum = 1.0L/probSum;
 
-    // Clear pixels
-    vector<vector<int> >().swap(pixels);
-
-    pixels.resize(yPixelCount);
+    pixSmp.resize(yPixelCount);
     for(int y = 0; y < yPixelCount; y++) {
-        pixels[y].resize(xPixelCount);
+        pixSmp[y].resize(xPixelCount);
         for(int x = 0; x < xPixelCount; x++) {
-            pixels[y][x] = 
-                max(Ceil2Int((long double)totalSamples * 
-                             (long double)adaptImg(x, y) * invProbSum), 1);
+            pixSmp[y][x] = 
+                max((int)ceil(totalSamples * 
+                    (long double)adaptImg(x, y) * invProbSum), 1);
         }
     }
 }
@@ -152,9 +159,8 @@ void SBF::GetAdaptPixels(int spp, vector<vector<int> > &pixels) {
 float SBF::CalculateAvgSpp() const {
     unsigned long long totalSamples = 0;
     for(int y = 0; y < yPixelCount; y++)
-        for(int x = 0; x < xPixelCount; x++) {
+        for(int x = 0; x < xPixelCount; x++)
             totalSamples += (unsigned long long)(*pixelInfos)(x, y).sampleCount;
-        }
     long double avgSpp = (long double)totalSamples/(long double)(xPixelCount*yPixelCount);
     return (float)avgSpp;
 }
@@ -165,8 +171,6 @@ void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
     string filenameBase = filename.substr(0, filename.rfind("."));
     string filenameExt  = filename.substr(filename.rfind("."));
 
-    printf("Avg spp: %.2f\n", CalculateAvgSpp());
-
     WriteImage(filenameBase+"_sbf_img"+filenameExt, colImg, xres, yres);
     WriteImage(filenameBase+"_sbf_flt"+filenameExt, fltImg, xres, yres);
     TwoDArray<Color> sImg = TwoDArray<Color>(xPixelCount, yPixelCount);
@@ -174,9 +178,11 @@ void SBF::WriteImage(const string &filename, int xres, int yres, bool dump) {
         for(int x = 0; x < xPixelCount; x++) {
             float sc = (float)(*pixelInfos)(x, y).sampleCount;
             sImg(x, y) = Color(sc, sc, sc);
-        }
+        }        
     WriteImage(filenameBase+"_sbf_smp"+filenameExt, sImg, xres, yres);
     WriteImage(filenameBase+"_sbf_param"+filenameExt, sigmaImg, xres, yres);
+    TwoDArray<Color> priColImg = FloatImageToColor(adaptImg);
+    WriteImage(filenameBase+"_sbf_pri"+filenameExt, priColImg, xres, yres);
 
     if(dump) { // Write debug images
         WriteImage(filenameBase+"_sbf_var"+filenameExt, varImg, xres, yres);
@@ -224,10 +230,10 @@ void SBF::Update(bool final) {
             PixelInfo &pixelInfo = (*pixelInfos)(x, y);
             float invSampleCount = 1.f/(float)pixelInfo.sampleCount;
             float invSampleCount_1 = 1.f/((float)pixelInfo.sampleCount-1.f);
-            Color colSum = Color(pixelInfo.Lxyz);
-            Color sqColSum = Color(pixelInfo.sqLxyz);
+            Color colSum = Color(pixelInfo.Lrgb);
+            Color sqColSum = Color(pixelInfo.sqLrgb);
             Color colMean = colSum*invSampleCount;
-            Color colVar = (sqColSum - colSum*colMean) *
+            Color colVar = (sqColSum - colSum*colMean) * 
                            invSampleCount_1 * invSampleCount;
 
             Color norSum = Color(pixelInfo.normal);
@@ -235,24 +241,24 @@ void SBF::Update(bool final) {
             Color norMean = norSum*invSampleCount;
             Color norVar = (sqNorSum - norSum*norMean) *
                            invSampleCount_1;
-
+            
             Color rhoSum = Color(pixelInfo.rho);
             Color sqRhoSum = Color(pixelInfo.sqRho);
             Color rhoMean = rhoSum*invSampleCount;
             Color rhoVar = (sqRhoSum - rhoSum*rhoMean) *
                            invSampleCount_1;
-
+            
             float depthSum = pixelInfo.depth;
             float sqDepthSum = pixelInfo.sqDepth;
             float depthMean = depthSum * invSampleCount;
             float depthVar = (sqDepthSum - depthSum*depthMean) *
                              invSampleCount_1;
-
+            
             colImg(x, y) = colMean;
             varImg(x, y) = colVar;
             norImg(x, y) = norMean;
             norVarImg(x, y) = norVar;
-            rhoImg(x, y) = rhoMean;
+            rhoImg(x, y) = rhoMean;            
             rhoVarImg(x, y) = rhoVar;
             depthImg(x, y) = depthMean;
             depthVarImg(x, y) = depthVar;
@@ -272,7 +278,7 @@ void SBF::Update(bool final) {
             featureVar[4] = rhoVar[1];
             featureVar[5] = rhoVar[2];
             featureVar[6] = depthVar;
-
+            
             featureImg(x, y) = feature;
             featureVarImg(x, y) = featureVar;
         }
@@ -284,19 +290,23 @@ void SBF::Update(bool final) {
      *  We found that this gives sharper result and smoother filter selection
      */
     rFilter.Apply(rColImg);
+    TwoDArray<Color> rVarImg = varImg;
     /**
      *  Theoratically, we should use squared kernel to filter variance,
      *  however we found that it will produce undersmoothed image(this is
      *  because we assumed Gaussian white noise when performing MSE 
      *  estimation, so we did not consider the covariances between pixels)
-     *  Therefore we reconstruct the variance with the original filter.      
+     *  Therefore we reconstruct the variance with the original filter. 
      */
-    rFilter.Apply(varImg);
+    rFilter.Apply(rVarImg);
 
-    // We reconstruct feature buffers with 1x1 box filter as it gives us sharper result
-    // In the case that the feature buffers are very noisy like heavy DOF or very fast
-    // motion, it might be a good idea to filter the feature buffer. But as the variance
-    // will be very local, we will have to apply some adaptive filters.
+    /**
+     *   We reconstruct feature buffers with 1x1 box filter as it gives us sharper result.
+     *   In the case that the feature buffers are very noisy, for example if there are heavy 
+     *   DOF or very fast motion, it might be a good idea to filter the feature buffer. 
+     *   But as the variance will be very local, we will have to apply some adaptive filters.
+     */
+
 
     vector<float> sigma = final ? finalParams : interParams;
     Feature sigmaF;
@@ -306,47 +316,56 @@ void SBF::Update(bool final) {
 
     vector<TwoDArray<Color> > fltArray;
     vector<TwoDArray<float> > mseArray;
+    vector<TwoDArray<float> > priArray;
+    vector<TwoDArray<float> > wSumArray;
     vector<TwoDArray<float> > fltMseArray;
+    vector<TwoDArray<float> > fltPriArray;
     for(size_t i = 0; i < sigma.size(); i++) {
         fltArray.push_back(TwoDArray<Color>(xPixelCount, yPixelCount));
         mseArray.push_back(TwoDArray<float>(xPixelCount, yPixelCount));
+        priArray.push_back(TwoDArray<float>(xPixelCount, yPixelCount));
+        wSumArray.push_back(TwoDArray<float>(xPixelCount, yPixelCount));
         fltMseArray.push_back(TwoDArray<float>(xPixelCount, yPixelCount));
+        fltPriArray.push_back(TwoDArray<float>(xPixelCount, yPixelCount));
     }
 
     if(fType == CROSS_BILATERAL_FILTER) {
         for(size_t i = 0; i < sigma.size(); i++) {
             CrossBilateralFilter cbFilter(sigma[i], c_SigmaC, sigmaF, xPixelCount, yPixelCount); 
             TwoDArray<Color> flt(xPixelCount, yPixelCount);
-            TwoDArray<float> mse(xPixelCount, yPixelCount);
-            cbFilter.Apply(colImg, featureImg, featureVarImg, rColImg, varImg, flt, mse);
+            TwoDArray<float> mse(xPixelCount, yPixelCount);            
+            TwoDArray<float> pri(xPixelCount, yPixelCount);
+            cbFilter.Apply(colImg, featureImg, featureVarImg, rColImg, varImg, rVarImg, flt, mse, pri);
             mseArray[i] = mse;
+            priArray[i] = pri;
             fltArray[i] = flt;
         }    
 
         CrossBilateralFilter mseFilter(final ? finalMseSigma : interMseSigma, 0.f, 
                                        sigmaF, xPixelCount, yPixelCount); 
-        mseFilter.ApplyMSE(mseArray, featureImg, featureVarImg, fltMseArray);
+        mseFilter.Apply(mseArray, priArray, featureImg, featureVarImg, fltMseArray, fltPriArray);
     } else { //fType == CROSS_NLM_FILTER
         CrossNLMFilter nlmFilter(final ? 20 : 10, 2, sigma, sigmaF, 
                 xPixelCount, yPixelCount);
         nlmFilter.Apply(colImg, featureImg, featureVarImg, 
-                rColImg, varImg, fltArray, mseArray);
+                rColImg, rVarImg, fltArray, mseArray, priArray);
         // We use cross bilateral filter to filter MSE estimation even for NLM filters.
         CrossBilateralFilter mseFilter(final ? finalMseSigma : interMseSigma, 0.f, 
                                        sigmaF, xPixelCount, yPixelCount);   
-        mseFilter.ApplyMSE(mseArray, featureImg, featureVarImg, fltMseArray);
-        //filter.ApplyMSE(0.04f, mseArray, rColImg, featureImg, featureVarImg, fltMseArray);
+        mseFilter.Apply(mseArray, priArray, featureImg, featureVarImg, fltMseArray, fltPriArray);
+        //filter.ApplyMSE(0.04f, mseArray, priArray, rColImg, featureImg, featureVarImg, fltMseArray, fltPriArray);
     }
 
-    minMseImg = numeric_limits<float>::infinity();
+    minMseImg = numeric_limits<float>::infinity();   
     for(size_t i = 0; i < sigma.size(); i++) {
 #pragma omp parallel for num_threads(PbrtOptions.nCores)
         for(int y = 0; y < yPixelCount; y++)
             for(int x = 0; x < xPixelCount; x++) {
-                float error = fltMseArray[i](x, y);
+                float error = fltMseArray[i](x, y);                
+                float pri = fltPriArray[i](x, y);
                 if(error < minMseImg(x, y)) {
                     Color c = fltArray[i](x, y);
-                    adaptImg(x, y) = error/(c.Y()*c.Y()+1e-3f);
+                    adaptImg(x, y) = max(pri, 0.f) / (float)(1.f + (*pixelInfos)(x, y).sampleCount);
                     minMseImg(x, y) = error;
                     fltImg(x, y) = c;
                     sigmaImg(x, y) = Color((float)i/(float)sigma.size());
@@ -356,4 +375,7 @@ void SBF::Update(bool final) {
 
     reporter.Update();
     reporter.Done();
+
+    printf("Current avg spp: %.2f\n", CalculateAvgSpp());
 }
+

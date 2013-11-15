@@ -245,7 +245,6 @@ VectorNf<N> operator-(float f, const VectorNf<N> &c) {
 }
 
 // Assume RGB color space
-// TODO: Add a flag for conversion between XYZ and RGB
 class Color : public VectorNf<3> {
 public:
     Color() {
@@ -273,18 +272,9 @@ public:
     }
 
     float Y() const {
-        //return data[1];
         // Only for RGB color        
         const float YWeight[3] = { 0.212671f, 0.715160f, 0.072169f };
         return YWeight[0] * data[0] + YWeight[1] * data[1] + YWeight[2] * data[2];
-    }
-
-    Color ToRGB() const {
-        float rgb[3];
-        rgb[0] =  3.240479f*data[0] - 1.537150f*data[1] - 0.498535f*data[2];
-        rgb[1] = -0.969256f*data[0] + 1.875991f*data[1] + 0.041556f*data[2];
-        rgb[2] =  0.055648f*data[0] - 0.204043f*data[1] + 1.057311f*data[2];
-        return Color(rgb);
     }
 };
 

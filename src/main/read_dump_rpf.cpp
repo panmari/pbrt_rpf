@@ -15,13 +15,22 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-    if (argc == 1)
-        Severe("No base name provided!");
+    if (argc == 1) {
+        Severe("No base name provided!, \n Usage: read_dump_rpf [file.bin] [quality] [jouni] [random_params]");
+    }
     string filename(argv[1]);
     string quality;
-    if (argc == 3)
+    string random_params;
+    float jouni;
+    if (argc >= 3)
     	quality = string(argv[2]);
     else quality = "medium";
+    if (argc >= 4)
+    	jouni = std::stof(string(argv[3]));
+    else jouni = 0.02f;
+    if (argc >= 5)
+    	random_params = string(argv[4]);
+    else random_params = "all";
 
     vector<SampleData> allSamples;
     int w, h, spp;
@@ -34,9 +43,9 @@ int main(int argc, char** argv)
 	dump.read((char*)&(allSamples[0]), allSamples.size() * sizeof(SampleData));
 	dump.close();
 
-    RandomParameterFilter rpf(w, h, spp, 0.02f, allSamples);
+    RandomParameterFilter rpf(w, h, spp, jouni, allSamples);
     rpf.setQuality(quality);
-    rpf.setRandomParams("all"); //TODO make argument for this
+    rpf.setRandomParams(random_params); //TODO make argument for this
     rpf.Apply();
 
     TwoDArray<Color> fltImg = TwoDArray<Color>(w, h);

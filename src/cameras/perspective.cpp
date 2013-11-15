@@ -86,6 +86,7 @@ float PerspectiveCamera::GenerateRayDifferential(const CameraSample &sample,
     RasterToCamera(Pras, &Pcamera);
     Vector dir = Normalize(Vector(Pcamera.x, Pcamera.y, Pcamera.z));
     *ray = RayDifferential(Point(0,0,0), dir, 0.f, INFINITY);
+    Vector dirX, dirY;
     // Modify ray for depth of field
     if (lensRadius > 0.) {
         // Sample point on lens
@@ -101,12 +102,33 @@ float PerspectiveCamera::GenerateRayDifferential(const CameraSample &sample,
         // Update ray for effect of lens
         ray->o = Point(lensU, lensV, 0.f);
         ray->d = Normalize(Pfocus - ray->o);
+
+        // dirX
+        Pras = Point(sample.imageX+1.f, sample.imageY, 0.f);
+        RasterToCamera(Pras, &Pcamera);
+        dir = Normalize(Vector(Pcamera));
+        ft = focalDistance / dir.z;
+        RayDifferential tr(Point(0,0,0), dir, 0.f, INFINITY);
+        Pfocus = tr(ft);
+        dirX = Normalize(Pfocus - ray->o);
+
+        // dirY
+        Pras = Point(sample.imageX, sample.imageY+1.f, 0.f);
+        RasterToCamera(Pras, &Pcamera);
+        dir = Normalize(Vector(Pcamera));
+        ft = focalDistance / dir.z;
+        tr = RayDifferential(Point(0,0,0), dir, 0.f, INFINITY);
+        Pfocus = tr(ft);
+        dirY = Normalize(Pfocus - ray->o);
+    } else {
+        dirX = Normalize(Vector(Pcamera) + dxCamera);
+        dirY = Normalize(Vector(Pcamera) + dyCamera);
     }
 
     // Compute offset rays for _PerspectiveCamera_ ray differentials
     ray->rxOrigin = ray->ryOrigin = ray->o;
-    ray->rxDirection = Normalize(Vector(Pcamera) + dxCamera);
-    ray->ryDirection = Normalize(Vector(Pcamera) + dyCamera);
+    ray->rxDirection = dirX;
+    ray->ryDirection = dirY;
     ray->time = Lerp(sample.time, shutterOpen, shutterClose);
     CameraToWorld(*ray, ray);
     ray->hasDifferentials = true;
