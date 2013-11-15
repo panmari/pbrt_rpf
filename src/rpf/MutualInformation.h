@@ -15,6 +15,7 @@
  * You must make an instance of this (instead of static), so memory for histograms only needs to be assigned once.
  */
 #define NR_BUCKETS 5
+#define NORMED true
 class MutualInformation {
 public:
 
@@ -51,7 +52,11 @@ public:
 				ent_ab += -prob_ab * fmath::log2(prob_ab);
 			}
 		}
-		return ent_a + ent_b - ent_ab;
+		float mi = (ent_a+ent_b-ent_ab);
+		if (NORMED)
+			return mi*rcp(ent_ab);
+		else
+			return mi;
 	}
 
 private:
@@ -67,6 +72,7 @@ private:
 	float hist_b[NR_BUCKETS];
 	float hist_ab[NR_BUCKETS*NR_BUCKETS];
 
+    inline float rcp(const float a) const { return (a) ? 1.f/ a : 0.f; };
 	inline int quantize(float v) const {
 		v = (v+2)/4;
 		v *= NR_BUCKETS-1;
