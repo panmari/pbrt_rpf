@@ -147,7 +147,9 @@ void RandomParameterFilter::Apply() {
 			}
 
 			alphaImg(s.x, s.y) = Color(alpha[0]);
-			betaImg(s.x, s.y) = Color(beta[0]); //TODO: do this smarter
+			betaImg(s.x, s.y) = Color(beta[0] + beta[1] + beta[2],
+					beta[6] + beta[7] + beta[8],
+					beta[12] + beta[13] + beta[14]);
 			D_r_cImg(s.x, s.y) = Color(D_r_c*rcp(D_a_c));
 			D_p_cImg(s.x, s.y) = Color(D_p_c*rcp(D_a_c));
 			D_f_cImg(s.x, s.y) = Color(D_f_c*rcp(D_a_c));
