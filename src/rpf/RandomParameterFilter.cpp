@@ -471,19 +471,23 @@ void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
 	//set x and y separately
 	pixelMean.x = allSamples[pixelIdx].x;
 	pixelMean.y = allSamples[pixelIdx].y;
+	// Online algorithm for computing variance from
+	// http://en.wikipedia.org/wiki/Algorithms_for_calculating_variance
+	vector<float> M2 = vector<float>(FEATURES_SIZE);
+	std::fill(M2.begin(), M2.end(), 0.f);
+	int n = 0;
 	for (int sampleOffset = 0; sampleOffset < spp; sampleOffset++) {
 		const SampleData &currentSample = allSamples[pixelIdx + sampleOffset];
+		n += 1;
 		for(int f=0;f<FEATURES_SIZE;f++)
 		{
-			pixelMean[f] += currentSample[f];
-			pixelMeanSquare[f] += sqr(currentSample[f]);
+			float delta = currentSample[f] - pixelMean[f];
+			pixelMean[f] += delta/n;
+			M2[f] += delta*(currentSample[f] - pixelMean[f]);
 		}
 	}
 	for(int f=0;f<FEATURES_SIZE;f++) {
-		pixelMean[f] /= spp;
-		pixelMeanSquare[f] /= spp;
-
-		pixelStd[f] = sqrt(max(0.f, pixelMeanSquare[f] - sqr(pixelMean[f]) ));	// max() avoids accidental NaNs
+		pixelStd[f] = max(0.f, M2[f]/(spp - 1));	// max() avoids accidental NaNs
 	}
 }
 
