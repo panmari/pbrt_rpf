@@ -35,9 +35,10 @@
 #include "samplers/random.h"
 #include "montecarlo.h"
 #include "camera.h"
+#include <time.h>
 
 RandomSampler::RandomSampler(int xstart, int xend,
-        int ystart, int yend, int ns, float sopen, float sclose)
+        int ystart, int yend, int ns, float sopen, float sclose, int randomSeed)
     : Sampler(xstart, xend, ystart, yend, ns, sopen, sclose) {
     xPos = xPixelStart;
     yPos = yPixelStart;
@@ -47,7 +48,7 @@ RandomSampler::RandomSampler(int xstart, int xend,
     lensSamples = imageSamples + 2 * nSamples;
     timeSamples = lensSamples + 2 * nSamples;
 
-    RNG rng(xstart + ystart * (xend-xstart));
+    RNG rng(randomSeed);
     for (int i = 0; i < 5 * nSamples; ++i)
         imageSamples[i] = rng.RandomFloat();
 
@@ -66,7 +67,7 @@ Sampler *RandomSampler::GetSubSampler(int num, int count) {
     ComputeSubWindow(num, count, &x0, &x1, &y0, &y1);
     if (x0 == x1 || y0 == y1) return NULL;
     return new RandomSampler(x0, x1, y0, y1, nSamples,
-       shutterOpen, shutterClose);
+       shutterOpen, shutterClose, time(NULL));
 }
 
 
@@ -116,10 +117,12 @@ int RandomSampler::GetMoreSamples(Sample *sample, RNG &rng) {
 Sampler *CreateRandomSampler(const ParamSet &params,
                        const Film *film, const Camera *camera) {
     int ns = params.FindOneInt("pixelsamples", 4);
+
     int xstart, xend, ystart, yend;
     film->GetSampleExtent(&xstart, &xend, &ystart, &yend);
+    int randomSeed = params.FindOneInt("randomseed", xstart + ystart * (xend-xstart));
     return new RandomSampler(xstart, xend, ystart, yend, ns,
-                             camera->shutterOpen, camera->shutterClose);
+                             camera->shutterOpen, camera->shutterClose, randomSeed);
 }
 
 

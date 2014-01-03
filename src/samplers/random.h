@@ -43,7 +43,7 @@
 class RandomSampler : public Sampler {
 public:
     RandomSampler(int xstart, int xend, int ystart,
-        int yend, int ns, float sopen, float sclose);
+        int yend, int ns, float sopen, float sclose, int randomSeed);
     ~RandomSampler() {
         FreeAligned(imageSamples);
     }

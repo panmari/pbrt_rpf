@@ -70,7 +70,8 @@ void SamplerRendererTask::Run() {
 
     // Declare local variables used for rendering loop
     MemoryArena arena;
-    RNG rng(taskNum);
+    RNG rng(time(NULL) + taskNum); // real random seeding
+    //RNG rng(taskNum);  // for repeatable results..
 
     // Allocate space for samples and intersections
     int maxSamples = sampler->MaximumSampleCount();

@@ -15,7 +15,7 @@
  * You must make an instance of this (instead of static), so memory for histograms only needs to be assigned once.
  */
 #define NR_BUCKETS 5
-#define NORMED true
+#define NORMED false
 class MutualInformation {
 public:
 
