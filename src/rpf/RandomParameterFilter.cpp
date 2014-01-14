@@ -404,19 +404,18 @@ void RandomParameterFilter::filterColorSamples(vector<float> &alpha, vector<floa
 	}
 
 	if (HDR_CLAMP) {
-		float colorMean[3], colorMeanSquare[3], colorStd[3], colorMeanAfter[3];;
-		for (int i=0; i<3; i++) { colorMean[i] = colorMeanSquare[i] = colorMeanAfter[i] = 0.f; }
+		float colorMean[3], colorM2[3], colorStd[3], colorMeanAfter[3];
+		for (int i=0; i<3; i++) { colorMean[i] = colorM2[i] = colorMeanAfter[i] = 0.f; }
 		for (int i=0; i<spp; i++) {
 			SampleData &s = allSamples[pixelIdx + i];
 			for(int j=0; j<3; j++) {
-				colorMean[j] += s.outputColors[j];
-				colorMeanSquare[j] += sqr(s.outputColors[j]);
+				float delta = s.outputColors[j] - colorMean[j];
+				colorMean[j] += delta/(i + 1);
+				colorM2[j] += delta*(s.outputColors[j] - colorMean[j]);
 			}
 		}
 		for (int i=0; i<3; i++) {
-			colorMean[i] /= spp;
-			colorMeanSquare[i] /= spp;
-			colorStd[i] = sqrt(max(0.f, colorMeanSquare[i] - sqr(colorMean[i])));
+			colorStd[i] = sqrt(colorM2[i]/(spp - 1));
 		}
 	#define STD_FACTOR 1
 		for (int i=0; i<spp; i++) {
@@ -487,7 +486,7 @@ void RandomParameterFilter::getPixelMeanAndStd(int pixelIdx,
 		}
 	}
 	for(int f=0;f<FEATURES_SIZE;f++) {
-		pixelStd[f] = max(0.f, M2[f]/(spp - 1));	// max() avoids accidental NaNs
+		pixelStd[f] = sqrt(M2[f]/(spp - 1));	// breaks for spp = 1
 	}
 }
 
