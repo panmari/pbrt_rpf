@@ -7,7 +7,7 @@ Film "rpfimage"
     "string filename"        ["sibenik_rpf.exr"]
     "bool dumpfeaturebuffer" ["true"]
     "float jouni"	     [0.02]
-    "random_params"	     ["lens"]
+    "random_params"	     ["frd lens"]
 
 
 #Sampler "lowdiscrepancy" "integer pixelsamples" [8]

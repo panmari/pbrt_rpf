@@ -7,12 +7,10 @@ Sample scenes for rendering are provided in sbf_scenes. Configurable parameters 
 This impacts computing time by a large amount. Available options are `high`, `medium`, defaulting to `medium`. 
 * **randomparams** Which random params should be considered. Available options are 
 `frd` (first reflection direction), `lens`, `time` and combinations of this (except `time` and `frd`, sorry)
+* **dumpfeaturebuffer** For debugging, all feature buffers can be dumped (default: false)
 
-## Considered data from samples
-
+## Considered features
 This can be changed in `rpf/SampleData.h`.
-
-### Considered features
 
 * first hitpoint/second origin
 * second hitpoint/third origin
@@ -20,12 +18,11 @@ This can be changed in `rpf/SampleData.h`.
 * second normal
 * albedo/rho
 
-### Considered random parameters
-
-Most likely you want to change this scene dependant. Can be configured in the scene file. Available are:
-
-* first reflection direction
-* lens position
-* time
+## Samplers
+While a random sampler makes most sense, you can also experiment with a low discrepancy sampler. See the report for more information.
 
 
+## Filtering with SBF
+
+This version of PBRT also allows filtering with [SBF](http://www.cmlab.csie.ntu.edu.tw/project/sbf/).
+See README.sbf.txt more information.
